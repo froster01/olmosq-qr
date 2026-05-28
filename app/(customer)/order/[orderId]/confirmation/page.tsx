@@ -5,12 +5,29 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { BrandMark } from "@/components/brand-mark";
 import { StatusBadge } from "@/components/staff/status-badge";
+import type {
+  Item,
+  ItemModifier,
+  OrderItem,
+  OrderItemModifier,
+  Variant,
+} from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ orderId: string }>;
 }
+
+type ConfirmationOrderModifier = OrderItemModifier & {
+  modifier: ItemModifier;
+};
+
+type ConfirmationOrderItem = OrderItem & {
+  item: Item;
+  variant: Variant | null;
+  modifiers: ConfirmationOrderModifier[];
+};
 
 export default async function ConfirmationPage({ params }: PageProps) {
   const { orderId } = await params;
@@ -84,7 +101,7 @@ export default async function ConfirmationPage({ params }: PageProps) {
 
           <div className="space-y-3">
             <h3 className="text-sm font-semibold">Order Summary</h3>
-            {order.items.map((oi) => (
+            {order.items.map((oi: ConfirmationOrderItem) => (
               <div
                 key={oi.id}
                 className="flex justify-between gap-4 rounded-xl bg-muted/45 p-3 text-sm"
@@ -101,7 +118,10 @@ export default async function ConfirmationPage({ params }: PageProps) {
                   )}
                   {oi.modifiers.length > 0 && (
                     <span className="text-muted-foreground text-xs block">
-                      + {oi.modifiers.map((m) => m.modifier.name).join(", ")}
+                      +{" "}
+                      {oi.modifiers
+                        .map((m: ConfirmationOrderModifier) => m.modifier.name)
+                        .join(", ")}
                     </span>
                   )}
                 </div>

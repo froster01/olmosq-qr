@@ -6,6 +6,7 @@ import { OrderCard } from "./order-card";
 interface OrderData {
   id: string;
   orderNumber: number;
+  shiftOrderNumber: number | null;
   tableCode: string;
   customerName: string;
   status: OrderStatus;

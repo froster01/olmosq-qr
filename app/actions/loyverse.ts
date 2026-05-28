@@ -9,6 +9,7 @@ import {
   getReceiptSyncFailedOrderStatus,
 } from "@/lib/orders/status-flow";
 import { validateCashPayment } from "@/lib/payments/cash-drawer";
+import { getCurrentShift } from "@/lib/shifts/current-shift";
 
 export async function syncMenuAction() {
   try {
@@ -39,6 +40,14 @@ export async function createReceiptAction(
     where: { id: orderId },
   });
   if (!order) return { success: false, error: "Order not found" };
+
+  const openShift = await getCurrentShift();
+  if (!openShift || order.shiftId !== openShift.id) {
+    return {
+      success: false,
+      error: "This order belongs to a closed shift and cannot be paid.",
+    };
+  }
 
   const paymentType = await prisma.paymentType.findUnique({
     where: { id: paymentTypeId },

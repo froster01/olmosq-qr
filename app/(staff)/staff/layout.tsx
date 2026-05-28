@@ -1,12 +1,23 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
 import { StaffNavLinks } from "@/components/staff/staff-nav-link";
+import { ShiftControl } from "@/components/staff/shift-control";
+import { getCurrentShift } from "@/lib/shifts/current-shift";
 
-export default function StaffNavLayout({
+export default async function StaffNavLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const shift = await getCurrentShift();
+  const headerShift = shift
+    ? {
+        id: shift.id,
+        shiftNumber: shift.shiftNumber,
+        openedAt: shift.openedAt.toISOString(),
+      }
+    : null;
+
   return (
     <div className="staff-shell flex min-h-dvh flex-col bg-background">
       <header className="staff-header sticky top-0 z-40 border-b bg-background/95 shadow-sm backdrop-blur">
@@ -21,6 +32,7 @@ export default function StaffNavLayout({
           <nav className="staff-nav flex items-center gap-1 overflow-x-auto">
             <StaffNavLinks />
           </nav>
+          <ShiftControl shift={headerShift} />
         </div>
       </header>
       <main className="staff-main mx-auto w-full max-w-7xl flex-1 px-4 py-6">

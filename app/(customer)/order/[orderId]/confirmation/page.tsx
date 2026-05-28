@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { BrandMark } from "@/components/brand-mark";
 import { StatusBadge } from "@/components/staff/status-badge";
+import { formatOrderDisplayNumber } from "@/lib/shifts/shift-rules";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,10 @@ export default async function ConfirmationPage({ params }: PageProps) {
   if (!order) {
     notFound();
   }
+  const displayNumber = formatOrderDisplayNumber({
+    shiftOrderNumber: order.shiftOrderNumber,
+    orderNumber: order.orderNumber,
+  });
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center bg-background p-5">
@@ -71,8 +76,8 @@ export default async function ConfirmationPage({ params }: PageProps) {
 
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Order #</span>
-              <span className="font-mono font-bold">{order.orderNumber}</span>
+              <span className="text-muted-foreground">Order</span>
+              <span className="font-mono font-bold">{displayNumber}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Table</span>

@@ -16,6 +16,7 @@ import {
 import { getStaffStatusActions } from "@/lib/orders/status-flow";
 import { calculateCashChange } from "@/lib/payments/cash-change";
 import { isCashPaymentType } from "@/lib/payments/cash-drawer";
+import { formatOrderDisplayNumber } from "@/lib/shifts/shift-rules";
 import { toast } from "sonner";
 import { ArrowLeft, Clipboard, Printer, ReceiptText } from "lucide-react";
 import Link from "next/link";
@@ -24,6 +25,7 @@ interface OrderDetailProps {
   order: {
     id: string;
     orderNumber: number;
+    shiftOrderNumber: number | null;
     tableCode: string;
     customerName: string;
     status: string;
@@ -53,6 +55,7 @@ interface OrderDetailProps {
       createdAt: string;
     }>;
     createdAt: string;
+    canEdit: boolean;
   };
 }
 
@@ -78,6 +81,10 @@ export function OrderDetailView({ order }: OrderDetailProps) {
           }
     );
   const receiptNumber = syncedReceiptNumber ?? order.loyverseReceiptNumber;
+  const displayNumber = formatOrderDisplayNumber({
+    shiftOrderNumber: order.shiftOrderNumber,
+    orderNumber: order.orderNumber,
+  });
 
   async function handleStatusUpdate(newStatus: string) {
     const result = await updateOrderStatus(order.id, newStatus);
@@ -85,7 +92,7 @@ export function OrderDetailView({ order }: OrderDetailProps) {
       router.refresh();
       toast.success("Order status updated");
     } else {
-      toast.error("Failed to update status");
+      toast.error(result.error || "Failed to update status");
     }
   }
 
@@ -140,9 +147,11 @@ export function OrderDetailView({ order }: OrderDetailProps) {
     }
   }
 
-  const transitions = getStaffStatusActions(order.status).filter(
-    (action) => action.nextStatus !== "AWAITING_PAYMENT"
-  );
+  const transitions = order.canEdit
+    ? getStaffStatusActions(order.status).filter(
+        (action) => action.nextStatus !== "AWAITING_PAYMENT"
+      )
+    : [];
 
   return (
     <div className="staff-detail-page space-y-6">
@@ -155,7 +164,7 @@ export function OrderDetailView({ order }: OrderDetailProps) {
         </Link>
         <div className="flex-1">
           <h1 className="staff-page-title font-heading text-3xl font-bold">
-            Order #{order.orderNumber}
+            Order {displayNumber}
           </h1>
           <p className="staff-page-subtitle text-muted-foreground text-sm">
             Table {order.tableCode} &middot; {order.customerName} &middot;{" "}
@@ -164,6 +173,14 @@ export function OrderDetailView({ order }: OrderDetailProps) {
         </div>
         <StatusBadge status={order.status} />
       </div>
+
+      {!order.canEdit && (
+        <Card className="border-muted bg-muted/25">
+          <CardContent className="p-4 text-sm text-muted-foreground">
+            This order belongs to a closed shift, so it is report-only.
+          </CardContent>
+        </Card>
+      )}
 
       <div className="staff-detail-grid grid gap-6 lg:grid-cols-3">
         {/* Main content */}
@@ -249,7 +266,8 @@ export function OrderDetailView({ order }: OrderDetailProps) {
 
           {/* Payment Collection (for AWAITING_PAYMENT status) */}
           {(order.status === "AWAITING_PAYMENT" ||
-            (order.status === "PAID_SYNC_FAILED" && !order.paymentType)) && (
+            (order.status === "PAID_SYNC_FAILED" && !order.paymentType)) &&
+            order.canEdit && (
             <PaymentSelector
               total={Number(order.total)}
               onPayment={handlePayment}
@@ -257,7 +275,10 @@ export function OrderDetailView({ order }: OrderDetailProps) {
           )}
 
           {/* Retry for failed syncs */}
-          {order.loyverseSyncError && order.paymentType && !receiptNumber && (
+          {order.canEdit &&
+            order.loyverseSyncError &&
+            order.paymentType &&
+            !receiptNumber && (
             <Card>
               <CardHeader>
                 <CardTitle>Sync Failed</CardTitle>
@@ -378,6 +399,11 @@ function PrintableReceiptCard({
   receiptNumber: string;
   cashPayment: CashPaymentSummary | null;
 }) {
+  const displayNumber = formatOrderDisplayNumber({
+    shiftOrderNumber: order.shiftOrderNumber,
+    orderNumber: order.orderNumber,
+  });
+
   async function handleCopyReceipt() {
     try {
       await navigator.clipboard.writeText(receiptNumber);
@@ -434,7 +460,7 @@ function PrintableReceiptCard({
             </div>
             <div className="flex justify-between">
               <span className="text-neutral-500">Order</span>
-              <span>#{order.orderNumber}</span>
+              <span>{displayNumber}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-neutral-500">Table</span>

@@ -26,8 +26,9 @@ test("preparing orders can be marked done", () => {
   ]);
 });
 
-test("awaiting-payment orders only expose cashier collection action", () => {
+test("awaiting-payment orders can be collected or cancelled", () => {
   assert.deepEqual(getStaffStatusActions("AWAITING_PAYMENT"), [
     { label: "Collect Payment", nextStatus: "AWAITING_PAYMENT" },
+    { label: "Cancel", nextStatus: "CANCELLED", variant: "destructive" },
   ]);
 });

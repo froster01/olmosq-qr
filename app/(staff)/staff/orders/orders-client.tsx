@@ -10,6 +10,7 @@ import type { OrderStatus } from "@prisma/client";
 interface OrderData {
   id: string;
   orderNumber: number;
+  shiftOrderNumber: number | null;
   tableCode: string;
   customerName: string;
   status: OrderStatus;
@@ -30,8 +31,10 @@ const statusTabs = [
 
 export function OrdersPageClient({
   initialOrders,
+  currentShift,
 }: {
   initialOrders: OrderData[];
+  currentShift: { id: string; shiftNumber: number; openedAt: string } | null;
 }) {
   const [orders, setOrders] = useState<OrderData[]>(initialOrders);
   const [activeTab, setActiveTab] = useState("ALL");
@@ -71,7 +74,9 @@ export function OrdersPageClient({
             Orders
           </h1>
           <p className="staff-page-subtitle text-sm text-muted-foreground">
-            Collect counter payments, then move paid orders through prep.
+            {currentShift
+              ? `Shift ${currentShift.shiftNumber} orders only. Collect counter payments, then move paid orders through prep.`
+              : "Open a shift from the header to start taking orders."}
           </p>
         </div>
         <Button

@@ -28,6 +28,7 @@ export function getStaffStatusActions(status: string): StaffStatusAction[] {
     ],
     AWAITING_PAYMENT: [
       { label: "Collect Payment", nextStatus: "AWAITING_PAYMENT" },
+      { label: "Cancel", nextStatus: "CANCELLED", variant: "destructive" },
     ],
     PREPARING: [{ label: "Mark Done", nextStatus: "DONE" }],
   };

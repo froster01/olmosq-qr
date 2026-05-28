@@ -6,6 +6,7 @@ import { StatusBadge } from "./status-badge";
 import Link from "next/link";
 import { updateOrderStatus } from "@/app/actions/orders";
 import { getStaffStatusActions } from "@/lib/orders/status-flow";
+import { formatOrderDisplayNumber } from "@/lib/shifts/shift-rules";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { OrderStatus } from "@prisma/client";
@@ -13,6 +14,7 @@ import type { OrderStatus } from "@prisma/client";
 interface OrderCardProps {
   id: string;
   orderNumber: number;
+  shiftOrderNumber: number | null;
   tableCode: string;
   customerName: string;
   status: OrderStatus;
@@ -24,6 +26,7 @@ interface OrderCardProps {
 export function OrderCard({
   id,
   orderNumber,
+  shiftOrderNumber,
   tableCode,
   customerName,
   status,
@@ -36,6 +39,10 @@ export function OrderCard({
   const createdTime = new Date(createdAt).toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit",
+  });
+  const displayNumber = formatOrderDisplayNumber({
+    shiftOrderNumber,
+    orderNumber,
   });
 
   async function handleStatusUpdate(newStatus: string) {
@@ -51,7 +58,7 @@ export function OrderCard({
     <Card className="staff-order-card relative py-0 transition-all hover:-translate-y-0.5 hover:bg-card hover:shadow-[0_8px_24px_rgba(51,51,51,0.08)]">
       <Link
         href={`/staff/orders/${id}`}
-        aria-label={`Open order #${orderNumber} details`}
+        aria-label={`Open order ${displayNumber} details`}
         className="absolute inset-0 z-10 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       />
       <CardContent className="staff-order-card-content grid gap-3 py-3 sm:grid-cols-[minmax(12rem,1.3fr)_minmax(10rem,0.8fr)_auto] sm:items-center lg:grid-cols-[minmax(14rem,1.4fr)_minmax(12rem,0.9fr)_auto_auto]">
@@ -60,7 +67,7 @@ export function OrderCard({
             Table {tableCode}
           </p>
           <span className="staff-order-number block truncate font-heading text-lg font-bold leading-tight">
-            Order #{orderNumber}
+            Order {displayNumber}
           </span>
           <p className="truncate text-sm font-medium text-muted-foreground">
             {customerName}

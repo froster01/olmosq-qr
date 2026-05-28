@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { getCurrentShift } from "@/lib/shifts/current-shift";
 import { notFound } from "next/navigation";
 import { OrderDetailView } from "./order-detail-client";
 
@@ -27,6 +28,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
   });
 
   if (!order) notFound();
+  const currentShift = await getCurrentShift();
 
   // Serialize Decimal fields to numbers for client component
   const serializedOrder = {
@@ -40,6 +42,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
     cashChange: order.cashChange === null ? null : Number(order.cashChange),
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
+    canEdit: currentShift?.id === order.shiftId,
     items: order.items.map((oi) => ({
       ...oi,
       unitPrice: Number(oi.unitPrice),

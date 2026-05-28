@@ -80,9 +80,27 @@ model PaymentType {
   updatedAt  DateTime @updatedAt
 }
 
+model Shift {
+  id              String      @id @default(cuid())
+  shiftNumber     Int         @unique
+  status          ShiftStatus @default(OPEN)
+  openedAt        DateTime    @default(now())
+  closedAt        DateTime?
+  nextOrderNumber Int         @default(1)
+  orders          Order[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([status])
+  @@index([openedAt])
+}
+
 model Order {
   id                    String                @id @default(cuid())
   orderNumber           Int                   @unique
+  shiftId               String?
+  shift                 Shift?                @relation(fields: [shiftId], references: [id])
+  shiftOrderNumber      Int?
   tableCode             String
   table                 Table                 @relation(fields: [tableCode], references: [code])
   customerName          String
@@ -104,9 +122,11 @@ model Order {
   updatedAt             DateTime              @updatedAt
 
   @@index([status])
+  @@index([shiftId])
   @@index([tableCode])
   @@index([createdAt])
   @@index([paidAt])
+  @@unique([shiftId, shiftOrderNumber])
 }
 
 model OrderItem {
@@ -165,4 +185,9 @@ enum OrderStatus {
 enum CustomerPaymentMethod {
   COUNTER
   QR
+}
+
+enum ShiftStatus {
+  OPEN
+  CLOSED
 }

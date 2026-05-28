@@ -53,10 +53,15 @@ function OrderingContent({
       formData.set("items", JSON.stringify(items));
 
       const result = await submitOrder(formData);
-      if (result.success && result.data) {
+      if ("data" in result && result.data) {
         router.push(`/order/${result.data.orderId}/confirmation`);
       } else {
-        toast.error("Failed to place order. Please try again.");
+        const error = "error" in result ? result.error : null;
+        const shiftError =
+          error && typeof error === "object" && "shift" in error
+            ? error.shift?.[0]
+            : null;
+        toast.error(shiftError ?? "Failed to place order. Please try again.");
         console.error(result);
       }
     } catch {

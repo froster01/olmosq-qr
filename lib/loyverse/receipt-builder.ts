@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { formatOrderDisplayNumber } from "@/lib/shifts/shift-rules";
 import { post } from "./client";
 
 interface ReceiptLineItem {
@@ -114,7 +115,7 @@ export async function buildReceiptPayload(
 
   return {
     store_id: storeId,
-    order: `QR-${order.orderNumber} / Table ${order.tableCode}`,
+    order: `QR-${formatOrderDisplayNumber(order)} / Table ${order.tableCode}`,
     note: `Customer: ${order.customerName}`,
     line_items: lineItems,
     payments: [],

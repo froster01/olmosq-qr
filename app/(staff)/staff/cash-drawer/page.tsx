@@ -1,14 +1,25 @@
-import { AlertCircle, Banknote, Clock, ReceiptText } from "lucide-react";
+import { Banknote, Clock, ReceiptText } from "lucide-react";
 import Link from "next/link";
 
 import { prisma } from "@/lib/db";
-import { fetchLatestLoyverseShiftSnapshot } from "@/lib/loyverse/shifts";
+import { getCurrentShift } from "@/lib/shifts/current-shift";
+import { formatOrderDisplayNumber } from "@/lib/shifts/shift-rules";
 import { formatReceiptMoney } from "@/lib/orders/receipt-summary";
 import { summarizeCashDrawer } from "@/lib/payments/cash-drawer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/staff/status-badge";
+import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
+
+function formatDateTime(date: Date | string | null): string {
+  if (!date) return "-";
+  return new Intl.DateTimeFormat("en-MY", {
+    timeZone: "Asia/Kuala_Lumpur",
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(date));
+}
 
 function formatTime(date: Date | string | null): string {
   if (!date) return "-";
@@ -19,43 +30,12 @@ function formatTime(date: Date | string | null): string {
   }).format(new Date(date));
 }
 
-function formatShiftWindow(start: Date | string | null, end: Date): string {
-  if (!start) return "No open shift";
-  return `${new Intl.DateTimeFormat("en-MY", {
-    timeZone: "Asia/Kuala_Lumpur",
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(start))} - ${formatTime(end)}`;
-}
-
 export default async function CashDrawerPage() {
-  const now = new Date();
-  let shiftError: string | null = null;
-  let shiftSnapshot: Awaited<
-    ReturnType<typeof fetchLatestLoyverseShiftSnapshot>
-  > = {
-    openShift: null,
-    latestClosedShift: null,
-  };
-
-  try {
-    shiftSnapshot = await fetchLatestLoyverseShiftSnapshot();
-  } catch (error) {
-    shiftError = error instanceof Error ? error.message : "Unknown error";
-  }
-
-  const shiftStart = shiftSnapshot.openShift
-    ? new Date(shiftSnapshot.openShift.opened_at)
-    : shiftSnapshot.latestClosedShift?.closed_at
-      ? new Date(shiftSnapshot.latestClosedShift.closed_at)
-      : null;
-  const usingClosedShiftFallback =
-    !shiftSnapshot.openShift && shiftSnapshot.latestClosedShift !== null;
-
-  const cashOrders = shiftStart
+  const currentShift = await getCurrentShift();
+  const cashOrders = currentShift
     ? await prisma.order.findMany({
         where: {
-          paidAt: { gte: shiftStart, lte: now },
+          shiftId: currentShift.id,
           paymentType: { type: "CASH" },
         },
         include: {
@@ -68,6 +48,7 @@ export default async function CashDrawerPage() {
   const localCashOrders = cashOrders.map((order) => ({
     id: order.id,
     orderNumber: order.orderNumber,
+    shiftOrderNumber: order.shiftOrderNumber,
     tableCode: order.tableCode,
     customerName: order.customerName,
     status: order.status,
@@ -80,17 +61,16 @@ export default async function CashDrawerPage() {
   }));
 
   const cashSummary = summarizeCashDrawer(localCashOrders);
-
-  const loyverseCashPayments =
-    shiftSnapshot.openShift?.cash_payments ??
-    shiftSnapshot.latestClosedShift?.cash_payments ??
-    0;
-  const loyverseExpectedCash =
-    shiftSnapshot.openShift?.expected_cash ??
-    shiftSnapshot.latestClosedShift?.expected_cash ??
-    0;
-  const adjustedExpectedCash =
-    loyverseExpectedCash + cashSummary.expectedCashImpact;
+  const closedShifts = await prisma.shift.findMany({
+    where: { status: "CLOSED" },
+    include: {
+      orders: {
+        include: { paymentType: true },
+      },
+    },
+    orderBy: { closedAt: "desc" },
+    take: 8,
+  });
 
   return (
     <div className="staff-page space-y-6">
@@ -100,14 +80,16 @@ export default async function CashDrawerPage() {
             Cash Drawer
           </h1>
           <p className="staff-page-subtitle text-muted-foreground">
-            Physical cash payments for the current cashier shift.
+            Physical cash payments and closed shift reports from this app.
           </p>
         </div>
         <div className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-sm font-semibold text-muted-foreground">
           <Clock className="h-4 w-4 text-primary" />
-          {usingClosedShiftFallback
-            ? `Current shift estimate: ${formatShiftWindow(shiftStart, now)}`
-            : formatShiftWindow(shiftStart, now)}
+          {currentShift
+            ? `Shift ${currentShift.shiftNumber} opened ${formatTime(
+                currentShift.openedAt
+              )}`
+            : "No open shift"}
         </div>
       </div>
 
@@ -130,22 +112,20 @@ export default async function CashDrawerPage() {
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
+      <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ReceiptText className="h-5 w-5 text-primary" />
-              Cash Orders
+              Current Shift Cash Orders
             </CardTitle>
           </CardHeader>
           <CardContent>
             {localCashOrders.length === 0 ? (
               <div className="rounded-2xl border border-dashed bg-muted/25 p-6 text-sm text-muted-foreground">
-                {shiftSnapshot.openShift
+                {currentShift
                   ? "No physical cash payments recorded for this open shift."
-                  : usingClosedShiftFallback
-                    ? "No physical cash payments recorded since the last closed Loyverse shift."
-                    : "Open a shift in Loyverse POS to start tracking physical cash here."}
+                  : "Open a shift from the staff header to start tracking cash."}
               </div>
             ) : (
               <div className="space-y-2">
@@ -160,7 +140,11 @@ export default async function CashDrawerPage() {
                         Table {order.tableCode}
                       </p>
                       <p className="font-heading text-xl font-bold">
-                        Order #{order.orderNumber}
+                        Order{" "}
+                        {formatOrderDisplayNumber({
+                          shiftOrderNumber: order.shiftOrderNumber,
+                          orderNumber: order.orderNumber,
+                        })}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {order.customerName} &middot; {formatTime(order.paidAt)}
@@ -196,49 +180,54 @@ export default async function CashDrawerPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Banknote className="h-5 w-5 text-primary" />
-              Loyverse Shift Check
+              Closed Shift Reports
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {shiftError ? (
-              <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-                <div className="mb-1 flex items-center gap-2 font-semibold">
-                  <AlertCircle className="h-4 w-4" />
-                  Loyverse shifts unavailable
-                </div>
-                <p>{shiftError}</p>
+          <CardContent className="space-y-3">
+            {closedShifts.length === 0 ? (
+              <div className="rounded-2xl border border-dashed bg-muted/25 p-4 text-sm text-muted-foreground">
+                Closed shift reports will appear here after the first shift is
+                closed.
               </div>
             ) : (
-              <div className="rounded-2xl border bg-muted/25 p-3 text-sm text-muted-foreground">
-                {shiftSnapshot.openShift
-                  ? `Open shift ${shiftSnapshot.openShift.id} is being used.`
-                  : usingClosedShiftFallback
-                    ? "Loyverse API does not return the current open shift, so this page is using the last closed shift as the starting point."
-                    : "No Loyverse shift snapshot found."}
-              </div>
-            )}
+              closedShifts.map((shift) => {
+                const salesTotal = shift.orders
+                  .filter((order) => order.status !== "CANCELLED")
+                  .reduce((sum, order) => sum + Number(order.total), 0);
 
-            <div className="space-y-2 text-sm">
-              <ReconcileLine
-                label="Loyverse cash payments"
-                value={formatReceiptMoney(loyverseCashPayments)}
-              />
-              <ReconcileLine
-                label="Loyverse expected cash"
-                value={formatReceiptMoney(loyverseExpectedCash)}
-              />
-              <ReconcileLine
-                label="Add physical cash sales"
-                value={formatReceiptMoney(cashSummary.expectedCashImpact)}
-              />
-              <div className="mt-3 rounded-2xl bg-accent/35 p-3">
-                <ReconcileLine
-                  label="Adjusted expected cash"
-                  value={formatReceiptMoney(adjustedExpectedCash)}
-                  strong
-                />
-              </div>
-            </div>
+                return (
+                  <div
+                    key={shift.id}
+                    className="rounded-2xl border bg-card p-3 text-sm"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-heading text-lg font-bold">
+                          Shift {shift.shiftNumber}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDateTime(shift.openedAt)} -{" "}
+                          {formatDateTime(shift.closedAt)}
+                        </p>
+                      </div>
+                      <p className="font-heading font-bold text-primary">
+                        {formatReceiptMoney(salesTotal)}
+                      </p>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between gap-3">
+                      <span className="text-muted-foreground">
+                        {shift.orders.length} orders
+                      </span>
+                      <Link href={`/staff/shift-reports/${shift.id}`}>
+                        <Button size="sm" variant="outline">
+                          View Report
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </CardContent>
         </Card>
       </div>
@@ -266,27 +255,6 @@ function CashLine({ label, value }: { label: string; value: string }) {
     <div>
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="font-semibold">{value}</p>
-    </div>
-  );
-}
-
-function ReconcileLine({
-  label,
-  value,
-  strong,
-}: {
-  label: string;
-  value: string;
-  strong?: boolean;
-}) {
-  return (
-    <div
-      className={`flex items-center justify-between gap-3 ${
-        strong ? "font-heading text-lg font-bold" : ""
-      }`}
-    >
-      <span className={strong ? "" : "text-muted-foreground"}>{label}</span>
-      <span>{value}</span>
     </div>
   );
 }

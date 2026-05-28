@@ -87,12 +87,30 @@ model Shift {
   openedAt        DateTime    @default(now())
   closedAt        DateTime?
   nextOrderNumber Int         @default(1)
+  startingCash    Decimal     @default(0) @db.Decimal(10, 2)
+  actualCash      Decimal?    @db.Decimal(10, 2)
+  cashVariance    Decimal?    @db.Decimal(10, 2)
+  closedNote      String?
   orders          Order[]
+  cashMovements   CashMovement[]
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
   @@index([status])
   @@index([openedAt])
+}
+
+model CashMovement {
+  id        String           @id @default(cuid())
+  shiftId   String
+  shift     Shift            @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  type      CashMovementType
+  amount    Decimal          @db.Decimal(10, 2)
+  note      String?
+  createdAt DateTime         @default(now())
+
+  @@index([shiftId])
+  @@index([createdAt])
 }
 
 model Order {
@@ -190,4 +208,9 @@ enum CustomerPaymentMethod {
 enum ShiftStatus {
   OPEN
   CLOSED
+}
+
+enum CashMovementType {
+  CASH_IN
+  CASH_OUT
 }

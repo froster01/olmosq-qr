@@ -1,4 +1,11 @@
-import { ArrowLeft, Banknote, ClipboardList, ReceiptText } from "lucide-react";
+import {
+  ArrowDownToLine,
+  ArrowLeft,
+  ArrowUpFromLine,
+  Banknote,
+  ClipboardList,
+  ReceiptText,
+} from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -53,7 +60,14 @@ export default async function ShiftReportPage({ params }: PageProps) {
   }));
   const summary = summarizeShiftReport({
     shiftId: shift.id,
+    startingCash: Number(shift.startingCash),
+    actualCash: shift.actualCash === null ? null : Number(shift.actualCash),
     orders: reportOrders,
+    movements: shift.cashMovements.map((movement) => ({
+      shiftId: movement.shiftId,
+      type: movement.type,
+      amount: Number(movement.amount),
+    })),
   });
 
   return (
@@ -78,23 +92,48 @@ export default async function ShiftReportPage({ params }: PageProps) {
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="staff-metrics-grid grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Gross sales"
           value={formatReceiptMoney(summary.grossSales)}
         />
         <MetricCard label="Orders" value={summary.orderCount.toString()} />
         <MetricCard
-          label="Cash received"
-          value={formatReceiptMoney(summary.cashReceived)}
+          label="Starting cash"
+          value={formatReceiptMoney(summary.startingCash)}
         />
         <MetricCard
-          label="Change given"
-          value={formatReceiptMoney(summary.cashChange)}
+          label="Cash sales"
+          value={formatReceiptMoney(summary.cashSales)}
+        />
+        <MetricCard label="Cash in" value={formatReceiptMoney(summary.cashIn)} />
+        <MetricCard
+          label="Cash out"
+          value={formatReceiptMoney(summary.cashOut)}
+        />
+        <MetricCard
+          label="Expected cash"
+          value={formatReceiptMoney(summary.expectedCash)}
+        />
+        <MetricCard
+          label="Actual cash"
+          value={
+            summary.actualCash === null
+              ? "-"
+              : formatReceiptMoney(summary.actualCash)
+          }
+        />
+        <MetricCard
+          label="Variance"
+          value={
+            summary.cashVariance === null
+              ? "-"
+              : formatReceiptMoney(summary.cashVariance)
+          }
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
+      <div className="staff-report-grid grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -113,7 +152,7 @@ export default async function ShiftReportPage({ params }: PageProps) {
                   <Link
                     key={order.id}
                     href={`/staff/orders/${order.id}`}
-                    className="grid gap-3 rounded-2xl border bg-card p-3 transition-colors hover:border-primary/50 hover:bg-accent/15 md:grid-cols-[1fr_auto_auto]"
+                    className="staff-report-row grid gap-3 rounded-2xl border bg-card p-3 transition-colors hover:border-primary/50 hover:bg-accent/15 md:grid-cols-[1fr_auto_auto]"
                   >
                     <div>
                       <p className="text-xs font-bold uppercase text-muted-foreground">
@@ -131,7 +170,7 @@ export default async function ShiftReportPage({ params }: PageProps) {
                         {formatTime(order.createdAt)}
                       </p>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 rounded-2xl bg-muted/35 p-2 text-sm md:min-w-72">
+                    <div className="staff-report-facts grid grid-cols-3 gap-2 rounded-2xl bg-muted/35 p-2 text-sm md:min-w-72">
                       <ReportLine
                         label="Total"
                         value={formatReceiptMoney(Number(order.total))}
@@ -195,6 +234,60 @@ export default async function ShiftReportPage({ params }: PageProps) {
               ))}
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Banknote className="h-5 w-5 text-primary" />
+                Cash Movements
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              {shift.cashMovements.length === 0 ? (
+                <p className="text-muted-foreground">No manual cash movements.</p>
+              ) : (
+                shift.cashMovements.map((movement) => (
+                  <div
+                    key={movement.id}
+                    className="rounded-2xl border bg-card p-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2 font-semibold">
+                        {movement.type === "CASH_IN" ? (
+                          <ArrowDownToLine className="h-4 w-4 text-primary" />
+                        ) : (
+                          <ArrowUpFromLine className="h-4 w-4 text-destructive" />
+                        )}
+                        {movement.type === "CASH_IN" ? "Cash In" : "Cash Out"}
+                      </div>
+                      <span className="font-semibold">
+                        {formatReceiptMoney(Number(movement.amount))}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {formatDateTime(movement.createdAt)}
+                    </p>
+                    {movement.note && (
+                      <p className="mt-2 rounded-xl bg-muted/35 p-2">
+                        {movement.note}
+                      </p>
+                    )}
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          {shift.closedNote && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Closing Note</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">
+                {shift.closedNote}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

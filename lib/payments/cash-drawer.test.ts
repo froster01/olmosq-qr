@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  calculateCashDrawerTotals,
   isCashPaymentType,
   summarizeCashDrawer,
   validateCashPayment,
@@ -72,5 +73,39 @@ test("summarizeCashDrawer totals only cash payment orders", () => {
     cashReceivedTotal: 30,
     changeGivenTotal: 8.5,
     expectedCashImpact: 21.5,
+  });
+});
+
+test("calculateCashDrawerTotals includes starting cash and manual movements", () => {
+  const totals = calculateCashDrawerTotals({
+    startingCash: 100,
+    orders: [
+      {
+        total: 14,
+        cashReceived: 20,
+        cashChange: 6,
+        paymentType: { type: "CASH", name: "Cash" },
+      },
+      {
+        total: 18,
+        paymentType: { type: "NONINTEGRATEDCARD", name: "Card" },
+      },
+    ],
+    movements: [
+      { type: "CASH_IN", amount: 50 },
+      { type: "CASH_OUT", amount: 12.5 },
+    ],
+  });
+
+  assert.deepEqual(totals, {
+    orderCount: 1,
+    startingCash: 100,
+    salesTotal: 14,
+    cashReceivedTotal: 20,
+    changeGivenTotal: 6,
+    expectedCashImpact: 14,
+    cashInTotal: 50,
+    cashOutTotal: 12.5,
+    expectedCash: 151.5,
   });
 });

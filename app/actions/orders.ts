@@ -2,6 +2,10 @@
 
 import { prisma } from "@/lib/db";
 import { getCheckoutOrderStatus } from "@/lib/orders/status-flow";
+import {
+  getUniqueOrderItemIds,
+  hasAllRequestedItems,
+} from "@/lib/orders/submit-order-validation";
 import { getCurrentShift } from "@/lib/shifts/current-shift";
 import { z } from "zod";
 
@@ -53,11 +57,17 @@ export async function submitOrder(formData: FormData) {
   }
 
   // Validate items exist
-  const itemIds = items.map((i) => i.itemId);
+  const itemIds = getUniqueOrderItemIds(items);
   const dbItems = await prisma.item.findMany({
     where: { id: { in: itemIds } },
+    select: { id: true },
   });
-  if (dbItems.length !== itemIds.length) {
+  if (
+    !hasAllRequestedItems({
+      requestedItemIds: itemIds,
+      foundItemIds: dbItems.map((item) => item.id),
+    })
+  ) {
     return { success: false, error: { items: ["One or more items not found"] } };
   }
 

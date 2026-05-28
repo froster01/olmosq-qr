@@ -15,6 +15,12 @@ export type OrderStatusSource = {
   status: string;
 };
 
+const finalOrderStatuses = new Set(["DONE", "CANCELLED"]);
+
+function roundMoney(amount: number): number {
+  return Math.round(amount * 100) / 100;
+}
+
 export function formatOrderDisplayNumber({
   shiftOrderNumber,
   orderNumber,
@@ -44,5 +50,27 @@ export function getShiftOrderAssignment({
 }
 
 export function canCloseShift(orders: OrderStatusSource[]): boolean {
-  return orders.length === 0;
+  return orders.every((order) => finalOrderStatuses.has(order.status));
+}
+
+export function validateShiftCashAmount(amount: number): number {
+  if (!Number.isFinite(amount)) {
+    throw new Error("Enter a valid cash amount");
+  }
+
+  if (amount < 0) {
+    throw new Error("Cash amount cannot be negative");
+  }
+
+  return roundMoney(amount);
+}
+
+export function calculateCashVariance({
+  expectedCash,
+  actualCash,
+}: {
+  expectedCash: number;
+  actualCash: number;
+}): number {
+  return roundMoney(actualCash - expectedCash);
 }

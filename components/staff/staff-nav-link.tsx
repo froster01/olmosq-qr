@@ -28,12 +28,12 @@ export function StaffNavLinks() {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-accent/35 hover:text-primary",
+              "staff-nav-link flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-accent/35 hover:text-primary",
               active && "bg-accent/40 text-primary"
             )}
           >
             <Icon className="h-4 w-4" />
-            {item.label}
+            <span className="staff-nav-label">{item.label}</span>
           </Link>
         );
       })}

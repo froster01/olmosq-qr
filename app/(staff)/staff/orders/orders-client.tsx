@@ -91,7 +91,7 @@ export function OrdersPageClient({
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="staff-tabs-list flex max-w-full flex-wrap justify-start gap-2 overflow-x-auto rounded-[1.35rem] bg-muted/35 p-1.5 ring-1 ring-border/60">
+        <TabsList className="staff-tabs-list flex max-w-full flex-nowrap justify-start gap-2 overflow-x-auto rounded-[1.35rem] bg-muted/35 p-1.5 ring-1 ring-border/60">
           {statusTabs.map((tab) => (
             <TabsTrigger
               key={tab.value}

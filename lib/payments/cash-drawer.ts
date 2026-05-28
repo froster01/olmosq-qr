@@ -7,10 +7,16 @@ export interface PaymentTypeLike {
 }
 
 export interface CashDrawerOrderLike {
+  status?: string;
   total: number;
   cashReceived?: number | null;
   cashChange?: number | null;
   paymentType?: PaymentTypeLike | null;
+}
+
+export interface CashMovementLike {
+  type: "CASH_IN" | "CASH_OUT";
+  amount: number;
 }
 
 export interface CashDrawerSummary {
@@ -19,6 +25,13 @@ export interface CashDrawerSummary {
   cashReceivedTotal: number;
   changeGivenTotal: number;
   expectedCashImpact: number;
+}
+
+export interface CashDrawerTotals extends CashDrawerSummary {
+  startingCash: number;
+  cashInTotal: number;
+  cashOutTotal: number;
+  expectedCash: number;
 }
 
 function roundMoney(amount: number): number {
@@ -64,6 +77,10 @@ export function summarizeCashDrawer(
 ): CashDrawerSummary {
   return orders.reduce<CashDrawerSummary>(
     (summary, order) => {
+      if (order.status === "CANCELLED") {
+        return summary;
+      }
+
       if (!order.paymentType || !isCashPaymentType(order.paymentType)) {
         return summary;
       }
@@ -92,4 +109,47 @@ export function summarizeCashDrawer(
       expectedCashImpact: 0,
     }
   );
+}
+
+export function calculateCashDrawerTotals({
+  startingCash,
+  orders,
+  movements,
+}: {
+  startingCash: number;
+  orders: CashDrawerOrderLike[];
+  movements: CashMovementLike[];
+}): CashDrawerTotals {
+  const orderSummary = summarizeCashDrawer(orders);
+  const movementTotals = movements.reduce(
+    (summary, movement) => {
+      if (movement.type === "CASH_IN") {
+        return {
+          ...summary,
+          cashInTotal: roundMoney(summary.cashInTotal + movement.amount),
+        };
+      }
+
+      return {
+        ...summary,
+        cashOutTotal: roundMoney(summary.cashOutTotal + movement.amount),
+      };
+    },
+    { cashInTotal: 0, cashOutTotal: 0 }
+  );
+
+  const roundedStartingCash = roundMoney(startingCash);
+
+  return {
+    ...orderSummary,
+    startingCash: roundedStartingCash,
+    cashInTotal: movementTotals.cashInTotal,
+    cashOutTotal: movementTotals.cashOutTotal,
+    expectedCash: roundMoney(
+      roundedStartingCash +
+        orderSummary.expectedCashImpact +
+        movementTotals.cashInTotal -
+        movementTotals.cashOutTotal
+    ),
+  };
 }

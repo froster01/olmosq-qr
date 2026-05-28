@@ -27,7 +27,7 @@ export function TablesPageClient({ tables }: { tables: TableData[] }) {
           No tables found. Run the seed script to create tables.
         </p>
       ) : (
-        <div className="staff-table-grid grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="staff-table-grid grid gap-4 sm:grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(12rem,1fr))]">
           {tables.map((table) => (
             <QRCodeDisplay
               key={table.code}

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
 import { StaffNavLinks } from "@/components/staff/staff-nav-link";
 import { ShiftControl } from "@/components/staff/shift-control";
+import { prisma } from "@/lib/db";
+import { calculateCashDrawerTotals } from "@/lib/payments/cash-drawer";
 import { getCurrentShift } from "@/lib/shifts/current-shift";
 
 export default async function StaffNavLayout({
@@ -10,11 +12,40 @@ export default async function StaffNavLayout({
   children: React.ReactNode;
 }) {
   const shift = await getCurrentShift();
+  const expectedCash = shift
+    ? calculateCashDrawerTotals({
+        startingCash: Number(shift.startingCash),
+        orders: (
+          await prisma.order.findMany({
+            where: { shiftId: shift.id },
+            include: { paymentType: true },
+          })
+        ).map((order) => ({
+          status: order.status,
+          total: Number(order.total),
+          cashReceived:
+            order.cashReceived === null ? null : Number(order.cashReceived),
+          cashChange:
+            order.cashChange === null ? null : Number(order.cashChange),
+          paymentType: order.paymentType,
+        })),
+        movements: (
+          await prisma.cashMovement.findMany({
+            where: { shiftId: shift.id },
+            select: { type: true, amount: true },
+          })
+        ).map((movement) => ({
+          type: movement.type,
+          amount: Number(movement.amount),
+        })),
+      }).expectedCash
+    : 0;
   const headerShift = shift
     ? {
         id: shift.id,
         shiftNumber: shift.shiftNumber,
         openedAt: shift.openedAt.toISOString(),
+        expectedCash,
       }
     : null;
 

@@ -25,6 +25,9 @@ export function getShiftById(shiftId: string) {
         },
         orderBy: { shiftOrderNumber: "asc" },
       },
+      cashMovements: {
+        orderBy: { createdAt: "asc" },
+      },
     },
   });
 }

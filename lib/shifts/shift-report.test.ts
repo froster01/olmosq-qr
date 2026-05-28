@@ -6,6 +6,8 @@ import { summarizeShiftReport } from "./shift-report";
 test("summarizeShiftReport totals only orders from the selected shift", () => {
   const report = summarizeShiftReport({
     shiftId: "shift-a",
+    startingCash: 100,
+    actualCash: 120,
     orders: [
       {
         shiftId: "shift-a",
@@ -32,14 +34,25 @@ test("summarizeShiftReport totals only orders from the selected shift", () => {
         paymentType: { name: "Cash", type: "CASH" },
       },
     ],
+    movements: [
+      { shiftId: "shift-a", type: "CASH_IN", amount: 10 },
+      { shiftId: "shift-a", type: "CASH_OUT", amount: 4 },
+      { shiftId: "shift-b", type: "CASH_IN", amount: 999 },
+    ],
   });
 
   assert.deepEqual(report, {
     orderCount: 2,
     grossSales: 14,
+    startingCash: 100,
     cashSales: 14,
     cashReceived: 20,
     cashChange: 6,
+    cashIn: 10,
+    cashOut: 4,
+    expectedCash: 120,
+    actualCash: 120,
+    cashVariance: 0,
     paymentTypeTotals: [{ name: "Cash", total: 14 }],
     statusCounts: [
       { status: "CANCELLED", count: 1 },

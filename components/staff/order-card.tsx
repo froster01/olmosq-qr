@@ -61,7 +61,7 @@ export function OrderCard({
         aria-label={`Open order ${displayNumber} details`}
         className="absolute inset-0 z-10 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       />
-      <CardContent className="staff-order-card-content grid gap-3 py-3 sm:grid-cols-[minmax(12rem,1.3fr)_minmax(10rem,0.8fr)_auto] sm:items-center lg:grid-cols-[minmax(14rem,1.4fr)_minmax(12rem,0.9fr)_auto_auto]">
+      <CardContent className="staff-order-card-content grid gap-3 py-3 md:grid-cols-[minmax(11rem,1fr)_auto_auto] md:items-center">
         <div className="staff-order-identity min-w-0">
           <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
             Table {tableCode}
@@ -74,22 +74,26 @@ export function OrderCard({
           </p>
         </div>
 
-        <div className="staff-order-meta flex items-center justify-between gap-3 rounded-xl bg-muted/55 px-3 py-2 text-sm sm:justify-start">
-          <span className="font-semibold">
-            {itemCount} item{itemCount !== 1 && "s"}
-          </span>
-          <span className="text-muted-foreground">{createdTime}</span>
-        </div>
+        <div className="staff-order-summary flex min-w-0 flex-wrap items-center gap-2 md:justify-end">
+          <div className="staff-order-meta flex min-w-0 items-center gap-2 text-sm">
+            <span className="staff-order-meta-badge font-semibold">
+              {itemCount} item{itemCount !== 1 && "s"}
+            </span>
+            <span className="staff-order-meta-badge text-muted-foreground">
+              {createdTime}
+            </span>
+          </div>
 
-        <div className="staff-order-total flex items-center justify-between gap-4 sm:flex-col sm:items-end sm:justify-center sm:text-right">
-          <StatusBadge status={status} />
-          <p className="font-heading text-base font-bold text-primary">
-            RM {Number(total).toFixed(2)}
-          </p>
+          <div className="staff-order-total flex items-center gap-2 text-right">
+            <StatusBadge status={status} />
+            <p className="font-heading text-base font-bold text-primary">
+              RM {Number(total).toFixed(2)}
+            </p>
+          </div>
         </div>
 
         {actions.length > 0 && (
-          <div className="staff-order-actions relative z-20 flex flex-wrap gap-2 lg:justify-end">
+          <div className="staff-order-actions relative z-20 flex flex-wrap justify-end gap-2 md:justify-end">
             {actions.map((action) => (
               action.nextStatus === "AWAITING_PAYMENT" ? (
                 <Link key={action.nextStatus} href={`/staff/orders/${id}`}>

@@ -12,7 +12,7 @@ export async function GET() {
 
   const orders = await prisma.order.findMany({
     where: { shiftId: currentShift.id },
-    orderBy: { shiftOrderNumber: "asc" },
+    orderBy: { shiftOrderNumber: "desc" },
     include: {
       _count: { select: { items: true } },
     },

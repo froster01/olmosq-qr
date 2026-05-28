@@ -68,7 +68,7 @@ export default function MenuSyncPage() {
         </Card>
       )}
 
-      <div className="staff-sync-grid grid gap-4 md:grid-cols-2">
+      <div className="staff-sync-grid grid gap-4 md:grid-cols-[repeat(auto-fit,minmax(18rem,1fr))]">
         <Card className="staff-sync-card transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(51,51,51,0.08)]">
           <CardHeader>
             <CardTitle>Menu Items</CardTitle>

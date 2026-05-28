@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShoppingCart, Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BrandMark } from "@/components/brand-mark";
 import { CartProvider, useCart } from "@/lib/cart-context";
 import { MenuBrowser } from "@/components/customer/menu-browser";
 import { CartSheet } from "@/components/customer/cart-sheet";
@@ -71,26 +72,27 @@ function OrderingContent({
   }
 
   return (
-    <div className="min-h-dvh flex flex-col">
+    <div className="min-h-dvh flex flex-col bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-background border-b">
-        <div className="flex items-center justify-between px-4 h-14">
+      <header className="sticky top-0 z-30 border-b bg-background/95 shadow-sm backdrop-blur">
+        <div className="flex h-16 items-center justify-between px-5">
           <div className="flex items-center gap-2">
-            <Coffee className="h-5 w-5" />
+            <BrandMark />
             <div>
-              <p className="font-semibold text-sm leading-tight">
+              <p className="font-heading text-base font-bold leading-tight text-primary">
                 Olmosq Coffee
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs font-medium text-muted-foreground">
                 Table {tableNumber}
               </p>
             </div>
           </div>
           <Button
             variant="outline"
-            size="sm"
+            size="icon"
             className="relative"
             onClick={() => setCartOpen(true)}
+            aria-label="Open cart"
           >
             <ShoppingCart className="h-4 w-4" />
             {items.length > 0 && (
@@ -103,13 +105,28 @@ function OrderingContent({
       </header>
 
       {/* Menu */}
-      <div className="flex-1 px-4 py-4">
+      <div className="flex-1 space-y-5 px-5 py-5">
+        <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_4px_16px_rgba(51,51,51,0.05)]">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-full bg-accent/50 text-primary">
+              <Coffee className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-heading text-xl font-bold leading-tight">
+                Fresh from the bar
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Choose your favourites, then place your table order.
+              </p>
+            </div>
+          </div>
+        </section>
         <MenuBrowser categories={categories} />
       </div>
 
       {/* Floating cart button when items in cart */}
       {items.length > 0 && (
-        <div className="sticky bottom-0 p-4 bg-background border-t">
+        <div className="sticky bottom-0 z-20 border-t bg-background/95 p-4 backdrop-blur">
           <Button
             className="w-full"
             size="lg"

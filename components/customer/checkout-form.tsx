@@ -42,8 +42,11 @@ export function CheckoutForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Your Name</DialogTitle>
+          <DialogTitle>What should we call you?</DialogTitle>
         </DialogHeader>
+        <p className="text-sm text-muted-foreground">
+          We will use this name when your table order is ready.
+        </p>
         <Input
           placeholder="Enter your name"
           value={name}
@@ -58,7 +61,7 @@ export function CheckoutForm({
         />
         {error && <p className="text-sm text-destructive">{error}</p>}
         <DialogFooter>
-          <Button onClick={handleSubmit} className="w-full">
+          <Button onClick={handleSubmit} className="w-full" size="lg">
             Continue
           </Button>
         </DialogFooter>

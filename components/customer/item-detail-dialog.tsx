@@ -9,7 +9,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/lib/cart-context";
 import type { Item, Variant, ItemModifier } from "@prisma/client";
@@ -31,26 +30,16 @@ export function ItemDetailDialog({
   onOpenChange,
 }: ItemDetailDialogProps) {
   const { addItem } = useCart();
-  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
-    null
-  );
-  const [selectedModifierIds, setSelectedModifierIds] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
 
   if (!item) return null;
 
-  const selectedVariant = item.variants.find(
-    (v) => v.id === selectedVariantId
-  );
-  const selectedModifiers = item.modifiers.filter((m) =>
-    selectedModifierIds.includes(m.id)
-  );
+  const defaultVariant = item.variants[0] ?? null;
 
   const unitPrice =
     Number(item.basePrice) +
-    (selectedVariant ? Number(selectedVariant.priceAdjustment) : 0) +
-    selectedModifiers.reduce((sum, m) => sum + Number(m.priceAdjustment), 0);
+    (defaultVariant ? Number(defaultVariant.priceAdjustment) : 0);
 
   const totalPrice = unitPrice * quantity;
 
@@ -59,18 +48,15 @@ export function ItemDetailDialog({
     addItem({
       itemId: item.id,
       itemName: item.name,
-      variantId: selectedVariantId || undefined,
-      variantName: selectedVariant?.name || undefined,
+      variantId: defaultVariant?.id,
       quantity,
-      modifierIds: selectedModifierIds,
-      modifierNames: selectedModifiers.map((m) => m.name),
+      modifierIds: [],
+      modifierNames: [],
       notes: notes || undefined,
       unitPrice,
     });
 
     // Reset
-    setSelectedVariantId(null);
-    setSelectedModifierIds([]);
     setQuantity(1);
     setNotes("");
     onOpenChange(false);
@@ -78,8 +64,6 @@ export function ItemDetailDialog({
 
   function handleClose(open: boolean) {
     if (!open) {
-      setSelectedVariantId(null);
-      setSelectedModifierIds([]);
       setQuantity(1);
       setNotes("");
     }
@@ -88,7 +72,7 @@ export function ItemDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{item.name}</DialogTitle>
         </DialogHeader>
@@ -97,106 +81,44 @@ export function ItemDetailDialog({
           <p className="text-sm text-muted-foreground">{item.description}</p>
         )}
 
-        {/* Variants */}
-        {item.variants.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="font-medium text-sm">Choose option</h4>
-            <div className="space-y-1">
-              {item.variants.map((variant) => (
-                <label
-                  key={variant.id}
-                  className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
-                    selectedVariantId === variant.id
-                      ? "border-primary bg-primary/5"
-                      : "hover:bg-muted"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="variant"
-                    value={variant.id}
-                    checked={selectedVariantId === variant.id}
-                    onChange={() => setSelectedVariantId(variant.id)}
-                    className="sr-only"
-                  />
-                  <span className="text-sm">{variant.name}</span>
-                  {Number(variant.priceAdjustment) !== 0 && (
-                    <span className="text-sm text-muted-foreground">
-                      +RM {Number(variant.priceAdjustment).toFixed(2)}
-                    </span>
-                  )}
-                </label>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Modifiers */}
-        {item.modifiers.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="font-medium text-sm">Add-ons</h4>
-            <div className="space-y-1">
-              {item.modifiers.map((mod) => (
-                <label
-                  key={mod.id}
-                  className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
-                    selectedModifierIds.includes(mod.id)
-                      ? "border-primary bg-primary/5"
-                      : "hover:bg-muted"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedModifierIds.includes(mod.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedModifierIds((prev) => [...prev, mod.id]);
-                      } else {
-                        setSelectedModifierIds((prev) =>
-                          prev.filter((id) => id !== mod.id)
-                        );
-                      }
-                    }}
-                    className="sr-only"
-                  />
-                  <span className="text-sm">{mod.name}</span>
-                  {Number(mod.priceAdjustment) !== 0 && (
-                    <span className="text-sm text-muted-foreground">
-                      +RM {Number(mod.priceAdjustment).toFixed(2)}
-                    </span>
-                  )}
-                </label>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <Separator />
-
         {/* Notes */}
-        <div>
-          <label className="text-sm font-medium">Special instructions</label>
-          <Input
-            placeholder="Any special requests..."
+        <div className="rounded-2xl border bg-accent/20 p-4">
+          <label
+            htmlFor="special-request"
+            className="font-heading text-lg font-bold"
+          >
+            Special request
+          </label>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Less ice, no sugar, extra hot, or anything we should know.
+          </p>
+          <textarea
+            id="special-request"
+            placeholder="Type your request here..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="mt-1"
+            rows={4}
+            className="mt-3 min-h-28 w-full resize-none rounded-2xl border border-input bg-card px-4 py-3 text-sm shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-3 focus:ring-ring/20"
           />
         </div>
+
+        <Separator />
 
         {/* Quantity */}
         <div className="flex items-center justify-center gap-4">
           <Button
             variant="outline"
-            size="sm"
+            size="icon"
             onClick={() => setQuantity(Math.max(1, quantity - 1))}
           >
             -
           </Button>
-          <span className="font-medium w-8 text-center">{quantity}</span>
+          <span className="w-10 text-center font-heading text-xl font-bold">
+            {quantity}
+          </span>
           <Button
             variant="outline"
-            size="sm"
+            size="icon"
             onClick={() => setQuantity(quantity + 1)}
           >
             +

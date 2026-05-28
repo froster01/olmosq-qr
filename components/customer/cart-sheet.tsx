@@ -24,8 +24,8 @@ export function CartSheet({ open, onOpenChange, onSubmit }: CartSheetProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex flex-col w-full sm:max-w-md">
-        <SheetHeader>
+      <SheetContent className="flex w-full flex-col sm:max-w-md">
+        <SheetHeader className="border-b">
           <SheetTitle className="flex items-center gap-2">
             <ShoppingBag className="h-5 w-5" />
             Your Cart ({items.length})
@@ -37,7 +37,7 @@ export function CartSheet({ open, onOpenChange, onSubmit }: CartSheetProps) {
             <p className="text-muted-foreground text-sm">Your cart is empty</p>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto px-4">
             {items.map((item, index) => (
               <div key={`${item.itemId}-${item.variantId}-${index}`}>
                 <CartItemRow item={item} index={index} />
@@ -50,13 +50,13 @@ export function CartSheet({ open, onOpenChange, onSubmit }: CartSheetProps) {
         {items.length > 0 && (
           <>
             <Separator />
-            <div className="space-y-3 pt-3">
-              <div className="flex justify-between font-semibold">
+            <div className="space-y-3 p-4 pt-3">
+              <div className="flex justify-between font-heading text-xl font-bold">
                 <span>Total</span>
-                <span>RM {subtotal.toFixed(2)}</span>
+                <span className="text-primary">RM {subtotal.toFixed(2)}</span>
               </div>
               <SheetFooter className="flex flex-col gap-2 sm:flex-col">
-                <Button className="w-full" onClick={onSubmit}>
+                <Button className="w-full" size="lg" onClick={onSubmit}>
                   Place Order
                 </Button>
                 <Button

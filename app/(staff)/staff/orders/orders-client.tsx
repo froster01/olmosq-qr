@@ -65,19 +65,33 @@ export function OrdersPageClient({
       : orders.filter((o) => o.status === activeTab);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Orders</h1>
-        <Button variant="outline" size="sm" onClick={refresh} disabled={refreshing}>
+    <div className="space-y-6">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <h1 className="font-heading text-3xl font-bold">Orders</h1>
+            <span className="rounded-full bg-accent/35 px-3 py-1 text-xs font-semibold text-accent-foreground">
+              Live
+            </span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Track table orders from scan to payment.
+          </p>
+        </div>
+        <Button variant="outline" onClick={refresh} disabled={refreshing}>
           <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-          Refresh
+          Refresh Feed
         </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="flex overflow-x-auto justify-start">
+        <TabsList className="flex justify-start overflow-x-auto bg-transparent p-0">
           {statusTabs.map((tab) => (
-            <TabsTrigger key={tab.value} value={tab.value} className="shrink-0">
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className="shrink-0 border border-border bg-card"
+            >
               {tab.label}
             </TabsTrigger>
           ))}

@@ -2,9 +2,9 @@ import { prisma } from "@/lib/db";
 import { post } from "./client";
 
 interface ReceiptLineItem {
-  item_variant_id: string;
+  variant_id: string;
   quantity: number;
-  modifiers: Array<{ modifier_id: string }>;
+  line_modifiers?: Array<{ modifier_option_id: string }>;
 }
 
 interface ReceiptPayment {
@@ -20,6 +20,67 @@ interface ReceiptPayload {
   payments: ReceiptPayment[];
 }
 
+export function resolveReceiptVariantId({
+  selectedVariantLoyverseId,
+  itemName,
+  variants,
+}: {
+  selectedVariantLoyverseId?: string | null;
+  itemName: string;
+  variants: Array<{ loyverseId: string }>;
+}): string {
+  const variantId = selectedVariantLoyverseId ?? variants[0]?.loyverseId;
+  if (!variantId) {
+    throw new Error(`No Loyverse variant found for item "${itemName}"`);
+  }
+  return variantId;
+}
+
+export function buildReceiptLineItem({
+  itemName,
+  quantity,
+  selectedVariantLoyverseId,
+  variants,
+  modifiers,
+}: {
+  itemName: string;
+  quantity: number;
+  selectedVariantLoyverseId?: string | null;
+  variants: Array<{ loyverseId: string }>;
+  modifiers: Array<{ loyverseId: string }>;
+}): ReceiptLineItem {
+  const lineModifiers = modifiers.map((modifier) => ({
+    modifier_option_id: modifier.loyverseId,
+  }));
+
+  return {
+    variant_id: resolveReceiptVariantId({
+      selectedVariantLoyverseId,
+      itemName,
+      variants,
+    }),
+    quantity,
+    ...(lineModifiers.length > 0 ? { line_modifiers: lineModifiers } : {}),
+  };
+}
+
+export function buildReceiptPayment({
+  paymentType,
+  amount,
+}: {
+  paymentType: { id: string; loyverseId: string };
+  amount: number;
+}): ReceiptPayment {
+  if (!paymentType.loyverseId) {
+    throw new Error(`No Loyverse payment type found for "${paymentType.id}"`);
+  }
+
+  return {
+    payment_type_id: paymentType.loyverseId,
+    amount,
+  };
+}
+
 export async function buildReceiptPayload(
   orderId: string
 ): Promise<ReceiptPayload> {
@@ -28,7 +89,7 @@ export async function buildReceiptPayload(
     include: {
       items: {
         include: {
-          item: true,
+          item: { include: { variants: true } },
           variant: true,
           modifiers: { include: { modifier: true } },
         },
@@ -41,27 +102,15 @@ export async function buildReceiptPayload(
   const storeId = process.env.LOYVERSE_STORE_ID;
   if (!storeId) throw new Error("LOYVERSE_STORE_ID is not set");
 
-  const lineItems: ReceiptLineItem[] = order.items.map((oi) => {
-    const variantLoyverseId = oi.variant?.loyverseId;
-    if (!variantLoyverseId) {
-      // Use the first variant of the item if no specific variant selected
-      // Fall back to item loyverseId
-      return {
-        item_variant_id: oi.item.loyverseId,
-        quantity: oi.quantity,
-        modifiers: oi.modifiers.map((m) => ({
-          modifier_id: m.modifier.loyverseId,
-        })),
-      };
-    }
-    return {
-      item_variant_id: variantLoyverseId,
+  const lineItems: ReceiptLineItem[] = order.items.map((oi) =>
+    buildReceiptLineItem({
+      itemName: oi.item.name,
       quantity: oi.quantity,
-      modifiers: oi.modifiers.map((m) => ({
-        modifier_id: m.modifier.loyverseId,
-      })),
-    };
-  });
+      selectedVariantLoyverseId: oi.variant?.loyverseId,
+      variants: oi.item.variants,
+      modifiers: oi.modifiers.map((m) => m.modifier),
+    })
+  );
 
   return {
     store_id: storeId,
@@ -78,7 +127,13 @@ export async function createLoyverseReceipt(
   amount: number
 ): Promise<{ receiptNumber: string }> {
   const payload = await buildReceiptPayload(orderId);
-  payload.payments = [{ payment_type_id: paymentTypeId, amount }];
+  const paymentType = await prisma.paymentType.findUnique({
+    where: { id: paymentTypeId },
+    select: { id: true, loyverseId: true },
+  });
+  if (!paymentType) throw new Error("Payment type not found");
+
+  payload.payments = [buildReceiptPayment({ paymentType, amount })];
 
   const response = await post<{ receipt_number: string }>(
     "/receipts",

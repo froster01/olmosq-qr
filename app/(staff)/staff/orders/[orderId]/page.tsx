@@ -28,9 +28,33 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
   if (!order) notFound();
 
-  return (
-    <OrderDetailView
-      order={JSON.parse(JSON.stringify(order))}
-    />
-  );
+  // Serialize Decimal fields to numbers for client component
+  const serializedOrder = {
+    ...order,
+    subtotal: Number(order.subtotal),
+    tax: Number(order.tax),
+    total: Number(order.total),
+    createdAt: order.createdAt.toISOString(),
+    updatedAt: order.updatedAt.toISOString(),
+    items: order.items.map((oi) => ({
+      ...oi,
+      unitPrice: Number(oi.unitPrice),
+      item: { id: oi.item.id, name: oi.item.name },
+      variant: oi.variant
+        ? { id: oi.variant.id, name: oi.variant.name }
+        : null,
+      modifiers: oi.modifiers.map((m) => ({
+        modifier: { id: m.modifier.id, name: m.modifier.name },
+      })),
+    })),
+    paymentType: order.paymentType
+      ? { id: order.paymentType.id, name: order.paymentType.name }
+      : null,
+    syncLogs: order.syncLogs.map((log) => ({
+      ...log,
+      createdAt: log.createdAt.toISOString(),
+    })),
+  };
+
+  return <OrderDetailView order={serializedOrder} />;
 }

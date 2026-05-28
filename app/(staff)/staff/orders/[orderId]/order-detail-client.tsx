@@ -8,8 +8,12 @@ import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/staff/status-badge";
 import { updateOrderStatus } from "@/app/actions/orders";
 import { createReceiptAction, retryReceiptAction } from "@/app/actions/loyverse";
+import {
+  buildReceiptItemDescription,
+  formatReceiptMoney,
+} from "@/lib/orders/receipt-summary";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Clipboard, Printer, ReceiptText } from "lucide-react";
 import Link from "next/link";
 
 interface OrderDetailProps {
@@ -47,6 +51,10 @@ interface OrderDetailProps {
 
 export function OrderDetailView({ order }: OrderDetailProps) {
   const router = useRouter();
+  const [syncedReceiptNumber, setSyncedReceiptNumber] = useState<string | null>(
+    null
+  );
+  const receiptNumber = syncedReceiptNumber ?? order.loyverseReceiptNumber;
 
   async function handleStatusUpdate(newStatus: string) {
     const result = await updateOrderStatus(order.id, newStatus);
@@ -60,9 +68,10 @@ export function OrderDetailView({ order }: OrderDetailProps) {
 
   async function handlePayment(paymentTypeId: string) {
     const result = await createReceiptAction(order.id, paymentTypeId);
-    if (result.success) {
+    if (result.success && result.data) {
+      setSyncedReceiptNumber(result.data.receiptNumber);
       router.refresh();
-      toast.success("Payment recorded and synced to Loyverse");
+      toast.success(`Receipt ${result.data.receiptNumber} synced`);
     } else {
       toast.error(result.error || "Payment sync failed");
       router.refresh();
@@ -71,9 +80,10 @@ export function OrderDetailView({ order }: OrderDetailProps) {
 
   async function handleRetry() {
     const result = await retryReceiptAction(order.id);
-    if (result.success) {
+    if (result.success && result.data) {
+      setSyncedReceiptNumber(result.data.receiptNumber);
       router.refresh();
-      toast.success("Receipt synced successfully");
+      toast.success(`Receipt ${result.data.receiptNumber} synced`);
     } else {
       toast.error(result.error || "Retry failed");
       router.refresh();
@@ -90,14 +100,13 @@ export function OrderDetailView({ order }: OrderDetailProps) {
       { label: "Cancel", status: "CANCELLED", variant: "destructive" },
     ],
     PREPARING: [{ label: "Ready for Payment", status: "AWAITING_PAYMENT" }],
-    PAID_SYNC_FAILED: [{ label: "Retry Sync", status: "PAID_SYNCING" }],
   };
 
   const transitions = statusTransitions[order.status] || [];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-4 rounded-2xl border bg-card p-5 shadow-[0_4px_16px_rgba(51,51,51,0.05)] sm:flex-row sm:items-center">
         <Link href="/staff/orders">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-1" />
@@ -105,7 +114,9 @@ export function OrderDetailView({ order }: OrderDetailProps) {
           </Button>
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold">Order #{order.orderNumber}</h1>
+          <h1 className="font-heading text-3xl font-bold">
+            Order #{order.orderNumber}
+          </h1>
           <p className="text-muted-foreground text-sm">
             Table {order.tableCode} &middot; {order.customerName} &middot;{" "}
             {new Date(order.createdAt).toLocaleString()}
@@ -124,9 +135,12 @@ export function OrderDetailView({ order }: OrderDetailProps) {
             </CardHeader>
             <CardContent className="space-y-3">
               {order.items.map((oi) => (
-                <div key={oi.id} className="flex justify-between">
+                <div
+                  key={oi.id}
+                  className="flex justify-between gap-4 rounded-xl bg-muted/45 p-3"
+                >
                   <div>
-                    <span>
+                    <span className="font-semibold">
                       {oi.quantity}x {oi.item.name}
                     </span>
                     {oi.variant && (
@@ -146,7 +160,7 @@ export function OrderDetailView({ order }: OrderDetailProps) {
                       </span>
                     )}
                   </div>
-                  <span className="font-medium">
+                  <span className="font-bold text-primary">
                     RM {(Number(oi.unitPrice) * oi.quantity).toFixed(2)}
                   </span>
                 </div>
@@ -162,9 +176,11 @@ export function OrderDetailView({ order }: OrderDetailProps) {
                   <span>RM {Number(order.tax).toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between font-semibold">
+              <div className="flex justify-between font-heading text-xl font-bold">
                 <span>Total</span>
-                <span>RM {Number(order.total).toFixed(2)}</span>
+                <span className="text-primary">
+                  RM {Number(order.total).toFixed(2)}
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -176,7 +192,7 @@ export function OrderDetailView({ order }: OrderDetailProps) {
                 <CardTitle>Actions</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {transitions.map((t) => (
                     <Button
                       key={t.status}
@@ -192,15 +208,13 @@ export function OrderDetailView({ order }: OrderDetailProps) {
           )}
 
           {/* Payment Collection (for AWAITING_PAYMENT status) */}
-          {order.status === "AWAITING_PAYMENT" && (
-            <PaymentSelector
-                  orderId={order.id}
-                  onPayment={handlePayment}
-                />
+          {(order.status === "AWAITING_PAYMENT" ||
+            (order.status === "PAID_SYNC_FAILED" && !order.paymentType)) && (
+            <PaymentSelector onPayment={handlePayment} />
           )}
 
           {/* Retry for failed syncs */}
-          {order.status === "PAID_SYNC_FAILED" && (
+          {order.status === "PAID_SYNC_FAILED" && order.paymentType && (
             <Card>
               <CardHeader>
                 <CardTitle>Sync Failed</CardTitle>
@@ -214,6 +228,10 @@ export function OrderDetailView({ order }: OrderDetailProps) {
                 <Button onClick={handleRetry}>Retry Sync</Button>
               </CardContent>
             </Card>
+          )}
+
+          {receiptNumber && (
+            <PrintableReceiptCard order={order} receiptNumber={receiptNumber} />
           )}
         </div>
 
@@ -229,13 +247,15 @@ export function OrderDetailView({ order }: OrderDetailProps) {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Method</span>
-                    <span>{order.paymentType.name}</span>
+                    <span className="font-semibold">
+                      {order.paymentType.name}
+                    </span>
                   </div>
-                  {order.loyverseReceiptNumber && (
+                  {receiptNumber && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Receipt</span>
                       <span className="font-mono text-xs">
-                        {order.loyverseReceiptNumber}
+                        {receiptNumber}
                       </span>
                     </div>
                   )}
@@ -286,11 +306,146 @@ export function OrderDetailView({ order }: OrderDetailProps) {
   );
 }
 
+function PrintableReceiptCard({
+  order,
+  receiptNumber,
+}: {
+  order: OrderDetailProps["order"];
+  receiptNumber: string;
+}) {
+  async function handleCopyReceipt() {
+    try {
+      await navigator.clipboard.writeText(receiptNumber);
+      toast.success("Receipt number copied");
+    } catch {
+      toast.error("Could not copy receipt number");
+    }
+  }
+
+  function handlePrint() {
+    window.print();
+  }
+
+  return (
+    <Card className="print-receipt-area overflow-hidden">
+      <CardHeader className="print-hide flex flex-row items-start justify-between gap-3">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <ReceiptText className="h-5 w-5 text-primary" />
+            Receipt
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Ready to print from this device
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleCopyReceipt}>
+            <Clipboard className="h-4 w-4" />
+            Copy
+          </Button>
+          <Button size="sm" onClick={handlePrint}>
+            <Printer className="h-4 w-4" />
+            Print
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="mx-auto max-w-sm rounded-2xl border bg-white p-5 text-neutral-950 shadow-sm print:border-0 print:p-0 print:shadow-none">
+          <div className="text-center">
+            <p className="font-heading text-2xl font-bold">Olmosq Cafe</p>
+            <p className="text-xs uppercase tracking-wide text-neutral-500">
+              QR Order Receipt
+            </p>
+          </div>
+
+          <Separator className="my-4 bg-neutral-200" />
+
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between gap-4">
+              <span className="text-neutral-500">Receipt</span>
+              <span className="font-mono text-xs font-semibold">
+                {receiptNumber}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-neutral-500">Order</span>
+              <span>#{order.orderNumber}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-neutral-500">Table</span>
+              <span>{order.tableCode}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-neutral-500">Customer</span>
+              <span>{order.customerName}</span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-neutral-500">Date</span>
+              <span className="text-right">
+                {new Date(order.createdAt).toLocaleString()}
+              </span>
+            </div>
+            {order.paymentType && (
+              <div className="flex justify-between">
+                <span className="text-neutral-500">Payment</span>
+                <span>{order.paymentType.name}</span>
+              </div>
+            )}
+          </div>
+
+          <Separator className="my-4 bg-neutral-200" />
+
+          <div className="space-y-3">
+            {order.items.map((oi) => (
+              <div key={oi.id} className="grid grid-cols-[1fr_auto] gap-3">
+                <div>
+                  <p className="text-sm font-semibold">
+                    {oi.quantity}x {buildReceiptItemDescription(oi)}
+                  </p>
+                  {oi.notes && (
+                    <p className="text-xs italic text-neutral-500">
+                      {oi.notes}
+                    </p>
+                  )}
+                </div>
+                <span className="text-sm font-semibold">
+                  {formatReceiptMoney(Number(oi.unitPrice) * oi.quantity)}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <Separator className="my-4 bg-neutral-200" />
+
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between">
+              <span>Subtotal</span>
+              <span>{formatReceiptMoney(Number(order.subtotal))}</span>
+            </div>
+            {Number(order.tax) > 0 && (
+              <div className="flex justify-between">
+                <span>Tax</span>
+                <span>{formatReceiptMoney(Number(order.tax))}</span>
+              </div>
+            )}
+            <div className="flex justify-between pt-2 font-heading text-xl font-bold">
+              <span>Total</span>
+              <span>{formatReceiptMoney(Number(order.total))}</span>
+            </div>
+          </div>
+
+          <p className="mt-5 text-center text-xs text-neutral-500">
+            Thank you. Please keep this receipt for reference.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function PaymentSelector({
-  orderId,
   onPayment,
 }: {
-  orderId: string;
   onPayment: (paymentTypeId: string) => void;
 }) {
   const [paymentTypes, setPaymentTypes] = useState<
@@ -335,10 +490,10 @@ function PaymentSelector({
           {paymentTypes.map((pt) => (
             <label
               key={pt.id}
-              className={`flex items-center p-3 rounded-lg border cursor-pointer transition-colors ${
+              className={`flex cursor-pointer items-center rounded-xl border p-3 transition-colors ${
                 selectedId === pt.id
-                  ? "border-primary bg-primary/5"
-                  : "hover:bg-muted"
+                  ? "border-primary bg-accent/35"
+                  : "bg-card hover:bg-muted"
               }`}
             >
               <input

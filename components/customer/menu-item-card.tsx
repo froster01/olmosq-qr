@@ -2,6 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Coffee } from "lucide-react";
 import type { Item, Variant, ItemModifier } from "@prisma/client";
 
 type ItemWithRelations = Item & {
@@ -15,39 +16,57 @@ interface MenuItemCardProps {
 }
 
 export function MenuItemCard({ item, onSelect }: MenuItemCardProps) {
+  const hasImage = Boolean(item.imageUrl);
+
   return (
     <Card
-      className="cursor-pointer hover:shadow-md transition-shadow"
+      className="cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(51,51,51,0.08)]"
       onClick={() => onSelect(item)}
     >
-      <CardContent className="p-4">
-        <div className="flex justify-between items-start gap-2">
-          <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-sm leading-tight truncate">
+      <CardContent className="flex gap-4 p-4">
+        <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-accent/35 text-primary">
+          {hasImage ? (
+            <div
+              className="size-full bg-cover bg-center"
+              style={{ backgroundImage: `url(${item.imageUrl ?? ""})` }}
+              aria-label={item.name}
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-1">
+              <Coffee className="h-6 w-6" />
+              <span className="font-heading text-lg font-bold">
+                {item.name.slice(0, 1)}
+              </span>
+            </div>
+          )}
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col justify-between gap-3">
+          <div>
+            <h3 className="truncate font-heading text-lg font-bold leading-tight">
               {item.name}
             </h3>
             {item.description && (
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
                 {item.description}
               </p>
             )}
-            {item.variants.length > 0 && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {item.variants.length} option{item.variants.length !== 1 && "s"}
-              </p>
-            )}
           </div>
-          <div className="text-right shrink-0">
-            <p className="font-semibold text-sm">
+          <div className="flex items-end justify-between gap-2">
+            <p className="font-bold text-primary">
               RM {Number(item.basePrice).toFixed(2)}
             </p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelect(item);
+              }}
+            >
+              Add
+            </Button>
           </div>
         </div>
-        <Button size="sm" className="w-full mt-3" variant="outline">
-          {item.variants.length > 0 || item.modifiers.length > 0
-            ? "Customize & Add"
-            : "Add to Cart"}
-        </Button>
       </CardContent>
     </Card>
   );

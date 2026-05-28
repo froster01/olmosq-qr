@@ -45,6 +45,10 @@ export function OrderCard({
 }: OrderCardProps) {
   const actions = statusActions[status] || [];
   const router = useRouter();
+  const createdTime = new Date(createdAt).toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 
   async function handleStatusUpdate(newStatus: string) {
     const result = await updateOrderStatus(id, newStatus);
@@ -56,33 +60,42 @@ export function OrderCard({
   }
 
   return (
-    <Card>
-      <CardContent className="pt-4 space-y-3">
+    <Card className="relative transition-all hover:-translate-y-0.5 hover:bg-card hover:shadow-[0_8px_24px_rgba(51,51,51,0.08)]">
+      <Link
+        href={`/staff/orders/${id}`}
+        aria-label={`Open order #${orderNumber} details`}
+        className="absolute inset-0 z-10 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      />
+      <CardContent className="space-y-4 pt-4">
         <div className="flex items-start justify-between">
-          <div>
-            <Link
-              href={`/staff/orders/${id}`}
-              className="font-semibold hover:underline"
-            >
-              #{orderNumber}
-            </Link>
-            <p className="text-sm text-muted-foreground">
-              Table {tableCode} &middot; {customerName}
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Table {tableCode}
             </p>
-            <p className="text-xs text-muted-foreground">
-              {itemCount} item{itemCount !== 1 && "s"} &middot;{" "}
-              {new Date(createdAt).toLocaleTimeString()}
+            <span className="font-heading text-xl font-bold">
+              Order #{orderNumber}
+            </span>
+            <p className="truncate text-sm font-medium text-muted-foreground">
+              {customerName}
             </p>
           </div>
-          <div className="text-right space-y-1">
+          <div className="space-y-2 text-right">
             <StatusBadge status={status} />
-            <p className="font-semibold text-sm">
+            <p className="font-heading text-lg font-bold text-primary">
               RM {Number(total).toFixed(2)}
             </p>
           </div>
         </div>
-        {actions.length > 0 && (
-          <div className="flex gap-2">
+        <div className="rounded-xl bg-muted/55 p-3 text-sm">
+          <div className="flex justify-between">
+            <span className="font-semibold">
+              {itemCount} item{itemCount !== 1 && "s"}
+            </span>
+            <span className="text-muted-foreground">{createdTime}</span>
+          </div>
+        </div>
+        {(actions.length > 0 || status === "AWAITING_PAYMENT") && (
+          <div className="relative z-20 flex gap-2">
             {actions.map((action) => (
               <Button
                 key={action.nextStatus}

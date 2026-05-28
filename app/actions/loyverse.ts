@@ -75,6 +75,7 @@ export async function createReceiptAction(
       data: {
         status: "PAID_SYNC_FAILED",
         loyverseSyncError: message,
+        paymentTypeId,
       },
     });
 

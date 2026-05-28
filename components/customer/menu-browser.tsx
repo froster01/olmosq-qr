@@ -56,17 +56,21 @@ export function MenuBrowser({ categories, loading }: MenuBrowserProps) {
   return (
     <>
       <Tabs defaultValue={categories[0]?.id} className="w-full">
-        <TabsList className="w-full flex overflow-x-auto justify-start">
+        <TabsList className="w-full flex justify-start overflow-x-auto bg-transparent p-0">
           {categories.map((cat) => (
-            <TabsTrigger key={cat.id} value={cat.id} className="shrink-0">
+            <TabsTrigger
+              key={cat.id}
+              value={cat.id}
+              className="shrink-0 border border-border bg-card"
+            >
               {cat.name}
             </TabsTrigger>
           ))}
         </TabsList>
 
         {categories.map((cat) => (
-          <TabsContent key={cat.id} value={cat.id}>
-            <div className="grid grid-cols-2 gap-3">
+          <TabsContent key={cat.id} value={cat.id} className="mt-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
               {cat.items
                 .filter((item) => item.isAvailable)
                 .map((item) => (

@@ -14,7 +14,9 @@ export function TablesPageClient({ tables }: { tables: TableData[] }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Tables & QR Codes</h1>
+        <h1 className="font-heading text-3xl font-bold">
+          Tables & QR Codes
+        </h1>
         <p className="text-muted-foreground">
           Scan the QR codes to open the ordering page for each table.
         </p>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -32,22 +33,28 @@ export function QRCodeDisplay({
   }
 
   return (
-    <Card>
-      <CardContent className="pt-6 flex flex-col items-center gap-4">
+    <Card className="transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(51,51,51,0.08)]">
+      <CardContent className="flex flex-col items-center gap-4 pt-6">
         <div className="text-center">
-          <p className="font-semibold">Table {tableNumber}</p>
+          <p className="font-heading text-xl font-bold">Table {tableNumber}</p>
           {tableName && (
             <p className="text-sm text-muted-foreground">{tableName}</p>
           )}
-          <p className="text-xs text-muted-foreground mt-1">{tableCode}</p>
+          <p className="mt-1 inline-flex rounded-full bg-accent/35 px-3 py-1 text-xs font-semibold text-accent-foreground">
+            {tableCode}
+          </p>
         </div>
-        <img
-          src={qrDataUrl}
-          alt={`QR Code for Table ${tableNumber}`}
-          className="w-48 h-48"
-        />
+        <div className="rounded-2xl border bg-white p-3 shadow-sm">
+          <Image
+            src={qrDataUrl}
+            alt={`QR Code for Table ${tableNumber}`}
+            width={192}
+            height={192}
+            unoptimized
+            className="h-48 w-48"
+          />
+        </div>
         <Button
-          size="sm"
           variant="outline"
           onClick={handleDownload}
           disabled={downloading}

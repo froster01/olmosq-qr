@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Table {
+  code      String   @id // unique QR code identifier e.g. "T1"
+  number    Int // display number e.g. 1
+  name      String? // optional label e.g. "Window Seat"
+  isActive  Boolean  @default(true)
+  orders    Order[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Category {
+  id         String   @id @default(cuid())
+  loyverseId String   @unique
+  name       String
+  imageUrl   String?
+  sortOrder  Int      @default(0)
+  items      Item[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Item {
+  id          String    @id @default(cuid())
+  loyverseId  String    @unique
+  name        String
+  description String?
+  basePrice   Decimal   @db.Decimal(10, 2)
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id])
+  imageUrl    String?
+  isAvailable Boolean   @default(true)
+  variants    Variant[]
+  modifiers   ItemModifier[]
+  orderItems  OrderItem[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Variant {
+  id              String  @id @default(cuid())
+  loyverseId      String  @unique
+  itemId          String
+  item            Item    @relation(fields: [itemId], references: [id])
+  name            String
+  priceAdjustment Decimal @default(0) @db.Decimal(10, 2)
+  sortOrder       Int     @default(0)
+  orderItems      OrderItem[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ItemModifier {
+  id              String  @id @default(cuid())
+  loyverseId      String  @unique
+  itemId          String
+  item            Item    @relation(fields: [itemId], references: [id])
+  name            String
+  priceAdjustment Decimal @default(0) @db.Decimal(10, 2)
+  orderItemMods   OrderItemModifier[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model PaymentType {
+  id         String  @id @default(cuid())
+  loyverseId String  @unique
+  name       String
+  isActive   Boolean @default(true)
+  orders     Order[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Order {
+  id                    String        @id @default(cuid())
+  orderNumber           Int           @unique
+  tableCode             String
+  table                 Table         @relation(fields: [tableCode], references: [code])
+  customerName          String
+  status                OrderStatus   @default(PENDING)
+  subtotal              Decimal       @db.Decimal(10, 2)
+  tax                   Decimal       @default(0) @db.Decimal(10, 2)
+  total                 Decimal       @db.Decimal(10, 2)
+  paymentTypeId         String?
+  paymentType           PaymentType?  @relation(fields: [paymentTypeId], references: [id])
+  loyverseReceiptNumber String?       @unique
+  loyverseSyncError     String?
+  items                 OrderItem[]
+  syncLogs              LoyverseSyncLog[]
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  @@index([status])
+  @@index([tableCode])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id        String              @id @default(cuid())
+  orderId   String
+  order     Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  itemId    String
+  item      Item                @relation(fields: [itemId], references: [id])
+  variantId String?
+  variant   Variant?            @relation(fields: [variantId], references: [id])
+  quantity  Int
+  unitPrice Decimal             @db.Decimal(10, 2)
+  modifiers OrderItemModifier[]
+  notes     String?
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@index([orderId])
+}
+
+model OrderItemModifier {
+  id          String       @id @default(cuid())
+  orderItemId String
+  orderItem   OrderItem    @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  modifierId  String
+  modifier    ItemModifier @relation(fields: [modifierId], references: [id])
+  createdAt   DateTime     @default(now())
+}
+
+model LoyverseSyncLog {
+  id           String   @id @default(cuid())
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  action       String
+  status       String // success | error
+  requestData  String?
+  responseData String?
+  errorMessage String?
+  createdAt    DateTime @default(now())
+
+  @@index([orderId])
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  PREPARING
+  AWAITING_PAYMENT
+  PAID_SYNCING
+  PAID_SYNCED_TO_LOYVERSE
+  PAID_SYNC_FAILED
+  CANCELLED
+}

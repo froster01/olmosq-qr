@@ -5,13 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { BrandMark } from "@/components/brand-mark";
 import { StatusBadge } from "@/components/staff/status-badge";
-import type {
-  Item,
-  ItemModifier,
-  OrderItem,
-  OrderItemModifier,
-  Variant,
-} from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -19,13 +12,16 @@ interface PageProps {
   params: Promise<{ orderId: string }>;
 }
 
-type ConfirmationOrderModifier = OrderItemModifier & {
-  modifier: ItemModifier;
+type ConfirmationOrderModifier = {
+  modifier: { name: string };
 };
 
-type ConfirmationOrderItem = OrderItem & {
-  item: Item;
-  variant: Variant | null;
+type ConfirmationOrderItem = {
+  id: string;
+  quantity: number;
+  unitPrice: unknown;
+  item: { name: string };
+  variant: { name: string } | null;
   modifiers: ConfirmationOrderModifier[];
 };
 

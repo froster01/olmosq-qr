@@ -7,7 +7,7 @@ export async function GET() {
   const paymentTypes = await prisma.paymentType.findMany({
     where: { isActive: true },
     orderBy: { name: "asc" },
-    select: { id: true, name: true },
+    select: { id: true, name: true, type: true },
   });
 
   return NextResponse.json(paymentTypes);

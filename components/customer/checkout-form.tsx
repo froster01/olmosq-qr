@@ -45,7 +45,8 @@ export function CheckoutForm({
           <DialogTitle>What should we call you?</DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground">
-          We will use this name when your table order is ready.
+          Please pay at the counter. We will start preparing after staff
+          confirms your payment.
         </p>
         <Input
           placeholder="Enter your name"
@@ -62,7 +63,7 @@ export function CheckoutForm({
         {error && <p className="text-sm text-destructive">{error}</p>}
         <DialogFooter>
           <Button onClick={handleSubmit} className="w-full" size="lg">
-            Continue
+            Send to Counter
           </Button>
         </DialogFooter>
       </DialogContent>

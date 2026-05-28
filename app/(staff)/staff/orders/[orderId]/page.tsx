@@ -34,6 +34,10 @@ export default async function OrderDetailPage({ params }: PageProps) {
     subtotal: Number(order.subtotal),
     tax: Number(order.tax),
     total: Number(order.total),
+    paidAt: order.paidAt?.toISOString() ?? null,
+    cashReceived:
+      order.cashReceived === null ? null : Number(order.cashReceived),
+    cashChange: order.cashChange === null ? null : Number(order.cashChange),
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
     items: order.items.map((oi) => ({
@@ -48,7 +52,11 @@ export default async function OrderDetailPage({ params }: PageProps) {
       })),
     })),
     paymentType: order.paymentType
-      ? { id: order.paymentType.id, name: order.paymentType.name }
+      ? {
+          id: order.paymentType.id,
+          name: order.paymentType.name,
+          type: order.paymentType.type,
+        }
       : null,
     syncLogs: order.syncLogs.map((log) => ({
       ...log,

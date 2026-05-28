@@ -67,9 +67,25 @@ export interface LoyverseReceiptResponse {
   total_money: number;
 }
 
+export interface LoyverseShift {
+  id: string;
+  store_id: string;
+  pos_device_id: string;
+  opened_at: string;
+  closed_at?: string | null;
+  starting_cash: number;
+  cash_payments: number;
+  cash_refunds: number;
+  paid_in: number;
+  paid_out: number;
+  expected_cash: number;
+  actual_cash?: number | null;
+}
+
 export interface LoyversePaginatedResponse<T> {
   items?: T[];
   categories?: T[];
   payment_types?: T[];
+  shifts?: T[];
   cursor?: string;
 }

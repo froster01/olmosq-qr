@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
+import { getCheckoutOrderStatus } from "@/lib/orders/status-flow";
 import { z } from "zod";
 
 const submitOrderSchema = z.object({
@@ -66,7 +67,8 @@ export async function submitOrder(formData: FormData) {
       subtotal,
       tax,
       total,
-      status: "PENDING",
+      customerPaymentMethod: "COUNTER",
+      status: getCheckoutOrderStatus(),
       items: {
         create: items.map((item) => ({
           itemId: item.itemId,

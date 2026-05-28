@@ -20,10 +20,9 @@ interface OrderData {
 
 const statusTabs = [
   { value: "ALL", label: "All" },
-  { value: "PENDING", label: "Pending" },
-  { value: "ACCEPTED", label: "Accepted" },
-  { value: "PREPARING", label: "Preparing" },
   { value: "AWAITING_PAYMENT", label: "Payment" },
+  { value: "PREPARING", label: "Preparing" },
+  { value: "DONE", label: "Done" },
   { value: "PAID_SYNCED_TO_LOYVERSE", label: "Paid" },
   { value: "PAID_SYNC_FAILED", label: "Failed" },
   { value: "CANCELLED", label: "Cancelled" },
@@ -65,32 +64,34 @@ export function OrdersPageClient({
       : orders.filter((o) => o.status === activeTab);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+    <div className="staff-page space-y-6">
+      <div className="staff-page-header flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <h1 className="font-heading text-3xl font-bold">Orders</h1>
-            <span className="rounded-full bg-accent/35 px-3 py-1 text-xs font-semibold text-accent-foreground">
-              Live
-            </span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Track table orders from scan to payment.
+          <h1 className="staff-page-title font-heading text-3xl font-bold">
+            Orders
+          </h1>
+          <p className="staff-page-subtitle text-sm text-muted-foreground">
+            Collect counter payments, then move paid orders through prep.
           </p>
         </div>
-        <Button variant="outline" onClick={refresh} disabled={refreshing}>
+        <Button
+          variant="outline"
+          onClick={refresh}
+          disabled={refreshing}
+          className="staff-refresh-button"
+        >
           <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
           Refresh Feed
         </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="flex justify-start overflow-x-auto bg-transparent p-0">
+        <TabsList className="staff-tabs-list flex max-w-full flex-wrap justify-start gap-2 overflow-x-auto rounded-[1.35rem] bg-muted/35 p-1.5 ring-1 ring-border/60">
           {statusTabs.map((tab) => (
             <TabsTrigger
               key={tab.value}
               value={tab.value}
-              className="shrink-0 border border-border bg-card"
+              className="staff-tab-trigger min-w-16 flex-none shrink-0 border border-border/70 bg-card px-4 text-muted-foreground shadow-sm data-active:border-primary data-active:bg-primary data-active:text-primary-foreground data-active:shadow-[0_4px_12px_rgba(80,101,47,0.18)]"
             >
               {tab.label}
             </TabsTrigger>

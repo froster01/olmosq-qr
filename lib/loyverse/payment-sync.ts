@@ -2,6 +2,14 @@ import { prisma } from "@/lib/db";
 import { fetchAllPages } from "./client";
 import type { LoyversePaymentType } from "./types";
 
+export function mapLoyversePaymentTypeForUpsert(pt: LoyversePaymentType) {
+  return {
+    loyverseId: pt.id,
+    name: pt.name,
+    type: pt.type,
+  };
+}
+
 export async function syncPaymentTypes(): Promise<number> {
   const paymentTypes = await fetchAllPages<LoyversePaymentType>(
     "/payment_types",
@@ -10,14 +18,17 @@ export async function syncPaymentTypes(): Promise<number> {
 
   let count = 0;
   for (const pt of paymentTypes) {
+    const paymentTypeData = mapLoyversePaymentTypeForUpsert(pt);
     await prisma.paymentType.upsert({
-      where: { loyverseId: pt.id },
+      where: { loyverseId: paymentTypeData.loyverseId },
       update: {
-        name: pt.name,
+        name: paymentTypeData.name,
+        type: paymentTypeData.type,
       },
       create: {
-        loyverseId: pt.id,
-        name: pt.name,
+        loyverseId: paymentTypeData.loyverseId,
+        name: paymentTypeData.name,
+        type: paymentTypeData.type,
       },
     });
     count++;

@@ -34,6 +34,10 @@ const statusConfig: Record<
     label: "Sync Failed",
     className: "bg-destructive/10 text-destructive",
   },
+  DONE: {
+    label: "Done",
+    className: "bg-accent/35 text-accent-foreground",
+  },
   CANCELLED: {
     label: "Cancelled",
     className: "bg-muted text-muted-foreground",

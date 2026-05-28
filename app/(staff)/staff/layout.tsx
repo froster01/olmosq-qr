@@ -8,22 +8,24 @@ export default function StaffNavLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-dvh bg-background flex flex-col">
-      <header className="sticky top-0 z-40 border-b bg-background/95 shadow-sm backdrop-blur">
-        <div className="mx-auto flex min-h-16 w-full max-w-7xl flex-wrap items-center gap-3 px-4 py-3 md:flex-nowrap md:gap-6">
+    <div className="staff-shell flex min-h-dvh flex-col bg-background">
+      <header className="staff-header sticky top-0 z-40 border-b bg-background/95 shadow-sm backdrop-blur">
+        <div className="staff-header-inner mx-auto flex min-h-16 w-full max-w-7xl flex-wrap items-center gap-3 px-4 py-3 md:flex-nowrap md:gap-6">
           <Link
             href="/staff/orders"
-            className="flex items-center gap-2 font-heading text-lg font-bold text-primary"
+            className="staff-brand flex items-center gap-2 font-heading text-lg font-bold text-primary"
           >
             <BrandMark className="size-8" />
-            Olmosq Staff
+            <span>Olmosq Staff</span>
           </Link>
-          <nav className="flex items-center gap-1 overflow-x-auto">
+          <nav className="staff-nav flex items-center gap-1 overflow-x-auto">
             <StaffNavLinks />
           </nav>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">{children}</main>
+      <main className="staff-main mx-auto w-full max-w-7xl flex-1 px-4 py-6">
+        {children}
+      </main>
     </div>
   );
 }

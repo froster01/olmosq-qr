@@ -57,7 +57,7 @@ export function CartSheet({ open, onOpenChange, onSubmit }: CartSheetProps) {
               </div>
               <SheetFooter className="flex flex-col gap-2 sm:flex-col">
                 <Button className="w-full" size="lg" onClick={onSubmit}>
-                  Place Order
+                  Pay at Counter
                 </Button>
                 <Button
                   variant="outline"

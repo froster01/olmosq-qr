@@ -116,7 +116,7 @@ function OrderingContent({
                 Fresh from the bar
               </p>
               <p className="text-sm text-muted-foreground">
-                Choose your favourites, then place your table order.
+                Choose your favourites, then pay at the counter to start prep.
               </p>
             </div>
           </div>
@@ -133,7 +133,7 @@ function OrderingContent({
             onClick={() => setCartOpen(true)}
           >
             <ShoppingCart className="h-4 w-4 mr-2" />
-            View Cart ({items.length}) - RM {subtotal.toFixed(2)}
+            Pay at Counter ({items.length}) - RM {subtotal.toFixed(2)}
           </Button>
         </div>
       )}
@@ -156,7 +156,7 @@ function OrderingContent({
         <div className="fixed inset-0 bg-background/80 z-50 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
-            <p className="text-sm">Placing your order...</p>
+            <p className="text-sm">Sending to counter...</p>
           </div>
         </div>
       )}

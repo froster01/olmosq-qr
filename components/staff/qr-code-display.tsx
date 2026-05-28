@@ -33,8 +33,8 @@ export function QRCodeDisplay({
   }
 
   return (
-    <Card className="transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(51,51,51,0.08)]">
-      <CardContent className="flex flex-col items-center gap-4 pt-6">
+    <Card className="staff-qr-card transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(51,51,51,0.08)]">
+      <CardContent className="staff-qr-card-content flex flex-col items-center gap-4 pt-6">
         <div className="text-center">
           <p className="font-heading text-xl font-bold">Table {tableNumber}</p>
           {tableName && (
@@ -44,14 +44,14 @@ export function QRCodeDisplay({
             {tableCode}
           </p>
         </div>
-        <div className="rounded-2xl border bg-white p-3 shadow-sm">
+        <div className="staff-qr-frame rounded-2xl border bg-white p-3 shadow-sm">
           <Image
             src={qrDataUrl}
             alt={`QR Code for Table ${tableNumber}`}
             width={192}
             height={192}
             unoptimized
-            className="h-48 w-48"
+            className="staff-qr-image h-48 w-48"
           />
         </div>
         <Button

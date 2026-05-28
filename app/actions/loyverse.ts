@@ -4,6 +4,11 @@ import { syncFullMenu } from "@/lib/loyverse/menu-sync";
 import { syncPaymentTypes } from "@/lib/loyverse/payment-sync";
 import { createLoyverseReceipt } from "@/lib/loyverse/receipt-builder";
 import { prisma } from "@/lib/db";
+import {
+  getPaidOrderStatus,
+  getReceiptSyncFailedOrderStatus,
+} from "@/lib/orders/status-flow";
+import { validateCashPayment } from "@/lib/payments/cash-drawer";
 
 export async function syncMenuAction() {
   try {
@@ -27,19 +32,39 @@ export async function syncPaymentTypesAction() {
 
 export async function createReceiptAction(
   orderId: string,
-  paymentTypeId: string
+  paymentTypeId: string,
+  cashReceived?: number
 ) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+  });
+  if (!order) return { success: false, error: "Order not found" };
+
+  const paymentType = await prisma.paymentType.findUnique({
+    where: { id: paymentTypeId },
+    select: { id: true, name: true, type: true },
+  });
+  if (!paymentType) return { success: false, error: "Payment type not found" };
+
+  let cashPayment: { cashReceived: number | null; cashChange: number | null };
   try {
-    // Update status to syncing
+    cashPayment = validateCashPayment({
+      paymentType,
+      total: Number(order.total),
+      cashReceived:
+        cashReceived ??
+        (order.cashReceived === null ? undefined : Number(order.cashReceived)),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { success: false, error: message };
+  }
+
+  try {
     await prisma.order.update({
       where: { id: orderId },
       data: { status: "PAID_SYNCING" },
     });
-
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-    });
-    if (!order) throw new Error("Order not found");
 
     const { receiptNumber } = await createLoyverseReceipt(
       orderId,
@@ -50,9 +75,12 @@ export async function createReceiptAction(
     await prisma.order.update({
       where: { id: orderId },
       data: {
-        status: "PAID_SYNCED_TO_LOYVERSE",
+        status: getPaidOrderStatus(),
         loyverseReceiptNumber: receiptNumber,
         paymentTypeId,
+        paidAt: new Date(),
+        cashReceived: cashPayment.cashReceived,
+        cashChange: cashPayment.cashChange,
         loyverseSyncError: null,
       },
     });
@@ -62,20 +90,26 @@ export async function createReceiptAction(
         orderId,
         action: "CREATE_RECEIPT",
         status: "success",
-        responseData: JSON.stringify({ receiptNumber }),
+        responseData: JSON.stringify({
+          receiptNumber,
+          cashPayment,
+        }),
       },
     });
 
-    return { success: true, data: { receiptNumber } };
+    return { success: true, data: { receiptNumber, cashPayment } };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
 
     await prisma.order.update({
       where: { id: orderId },
       data: {
-        status: "PAID_SYNC_FAILED",
+        status: getReceiptSyncFailedOrderStatus(),
         loyverseSyncError: message,
         paymentTypeId,
+        paidAt: new Date(),
+        cashReceived: cashPayment.cashReceived,
+        cashChange: cashPayment.cashChange,
       },
     });
 
@@ -99,5 +133,9 @@ export async function retryReceiptAction(orderId: string) {
   if (!order || !order.paymentTypeId) {
     return { success: false, error: "Order or payment type not found" };
   }
-  return createReceiptAction(orderId, order.paymentTypeId);
+  return createReceiptAction(
+    orderId,
+    order.paymentTypeId,
+    order.cashReceived === null ? undefined : Number(order.cashReceived)
+  );
 }

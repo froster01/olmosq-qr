@@ -21,14 +21,14 @@ interface OrdersListProps {
 export function OrdersList({ orders }: OrdersListProps) {
   if (orders.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
+      <div className="staff-empty-state py-12 text-center text-muted-foreground">
         No orders found.
       </div>
     );
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="staff-orders-list flex flex-col gap-2">
       {orders.map((order) => (
         <OrderCard key={order.id} {...order} />
       ))}

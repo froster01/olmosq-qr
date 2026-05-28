@@ -50,10 +50,12 @@ export default function MenuSyncPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-heading text-3xl font-bold">Menu Sync</h1>
-        <p className="text-muted-foreground">
+    <div className="staff-page space-y-6">
+      <div className="staff-page-header">
+        <h1 className="staff-page-title font-heading text-3xl font-bold">
+          Menu Sync
+        </h1>
+        <p className="staff-page-subtitle text-muted-foreground">
           Sync menu items, categories, and payment types from Loyverse POS.
         </p>
       </div>
@@ -66,8 +68,8 @@ export default function MenuSyncPage() {
         </Card>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(51,51,51,0.08)]">
+      <div className="staff-sync-grid grid gap-4 md:grid-cols-2">
+        <Card className="staff-sync-card transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(51,51,51,0.08)]">
           <CardHeader>
             <CardTitle>Menu Items</CardTitle>
             <CardDescription>
@@ -98,7 +100,7 @@ export default function MenuSyncPage() {
           </CardContent>
         </Card>
 
-        <Card className="transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(51,51,51,0.08)]">
+        <Card className="staff-sync-card transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(51,51,51,0.08)]">
           <CardHeader>
             <CardTitle>Payment Types</CardTitle>
             <CardDescription>

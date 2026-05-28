@@ -59,9 +59,11 @@ export default async function ConfirmationPage({ params }: PageProps) {
                 Olmosq Coffee
               </span>
             </div>
-            <h1 className="font-heading text-3xl font-bold">Order Placed!</h1>
+            <h1 className="font-heading text-3xl font-bold">
+              Pay at Counter
+            </h1>
             <p className="text-muted-foreground">
-              Thank you, {order.customerName}!
+              Thank you, {order.customerName}. Show this order to the cashier.
             </p>
           </div>
 
@@ -84,8 +86,8 @@ export default async function ConfirmationPage({ params }: PageProps) {
 
           <Separator />
 
-          <div className="grid grid-cols-4 gap-2 text-center text-[11px] font-semibold text-muted-foreground">
-            {["Pending", "Accepted", "Preparing", "Payment"].map((step) => (
+          <div className="grid grid-cols-3 gap-2 text-center text-[11px] font-semibold text-muted-foreground">
+            {["Payment", "Preparing", "Done"].map((step) => (
               <div key={step} className="space-y-2">
                 <div className="h-1 rounded-full bg-accent" />
                 <span>{step}</span>
@@ -136,8 +138,8 @@ export default async function ConfirmationPage({ params }: PageProps) {
           </div>
 
           <p className="text-xs text-center text-muted-foreground">
-            Your order has been sent to the kitchen. Please wait while we
-            prepare your order.
+            Please pay at the counter. Your order will be prepared after staff
+            confirms payment.
           </p>
         </CardContent>
       </Card>

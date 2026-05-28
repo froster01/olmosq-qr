@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/staff/status-badge";
 import { updateOrderStatus } from "@/app/actions/orders";
@@ -12,6 +13,9 @@ import {
   buildReceiptItemDescription,
   formatReceiptMoney,
 } from "@/lib/orders/receipt-summary";
+import { getStaffStatusActions } from "@/lib/orders/status-flow";
+import { calculateCashChange } from "@/lib/payments/cash-change";
+import { isCashPaymentType } from "@/lib/payments/cash-drawer";
 import { toast } from "sonner";
 import { ArrowLeft, Clipboard, Printer, ReceiptText } from "lucide-react";
 import Link from "next/link";
@@ -26,9 +30,12 @@ interface OrderDetailProps {
     subtotal: number;
     tax: number;
     total: number;
+    paidAt: string | null;
+    cashReceived: number | null;
+    cashChange: number | null;
     loyverseReceiptNumber: string | null;
     loyverseSyncError: string | null;
-    paymentType: { id: string; name: string } | null;
+    paymentType: { id: string; name: string; type: string } | null;
     items: Array<{
       id: string;
       quantity: number;
@@ -49,11 +56,27 @@ interface OrderDetailProps {
   };
 }
 
+interface CashPaymentSummary {
+  received: number;
+  change: number;
+  total: number;
+}
+
 export function OrderDetailView({ order }: OrderDetailProps) {
   const router = useRouter();
   const [syncedReceiptNumber, setSyncedReceiptNumber] = useState<string | null>(
     null
   );
+  const [cashPaymentSummary, setCashPaymentSummary] =
+    useState<CashPaymentSummary | null>(() =>
+      order.cashReceived === null || order.cashChange === null
+        ? null
+        : {
+            received: order.cashReceived,
+            change: order.cashChange,
+            total: Number(order.total),
+          }
+    );
   const receiptNumber = syncedReceiptNumber ?? order.loyverseReceiptNumber;
 
   async function handleStatusUpdate(newStatus: string) {
@@ -66,10 +89,27 @@ export function OrderDetailView({ order }: OrderDetailProps) {
     }
   }
 
-  async function handlePayment(paymentTypeId: string) {
-    const result = await createReceiptAction(order.id, paymentTypeId);
+  async function handlePayment(
+    paymentTypeId: string,
+    cashPayment?: CashPaymentSummary
+  ) {
+    const result = await createReceiptAction(
+      order.id,
+      paymentTypeId,
+      cashPayment?.received
+    );
     if (result.success && result.data) {
       setSyncedReceiptNumber(result.data.receiptNumber);
+      setCashPaymentSummary(
+        result.data.cashPayment.cashReceived === null ||
+          result.data.cashPayment.cashChange === null
+          ? null
+          : {
+              received: result.data.cashPayment.cashReceived,
+              change: result.data.cashPayment.cashChange,
+              total: Number(order.total),
+            }
+      );
       router.refresh();
       toast.success(`Receipt ${result.data.receiptNumber} synced`);
     } else {
@@ -82,6 +122,16 @@ export function OrderDetailView({ order }: OrderDetailProps) {
     const result = await retryReceiptAction(order.id);
     if (result.success && result.data) {
       setSyncedReceiptNumber(result.data.receiptNumber);
+      setCashPaymentSummary(
+        result.data.cashPayment.cashReceived === null ||
+          result.data.cashPayment.cashChange === null
+          ? null
+          : {
+              received: result.data.cashPayment.cashReceived,
+              change: result.data.cashPayment.cashChange,
+              total: Number(order.total),
+            }
+      );
       router.refresh();
       toast.success(`Receipt ${result.data.receiptNumber} synced`);
     } else {
@@ -90,23 +140,13 @@ export function OrderDetailView({ order }: OrderDetailProps) {
     }
   }
 
-  const statusTransitions: Record<string, Array<{ label: string; status: string; variant?: "default" | "destructive" }>> = {
-    PENDING: [
-      { label: "Accept Order", status: "ACCEPTED" },
-      { label: "Cancel", status: "CANCELLED", variant: "destructive" },
-    ],
-    ACCEPTED: [
-      { label: "Start Preparing", status: "PREPARING" },
-      { label: "Cancel", status: "CANCELLED", variant: "destructive" },
-    ],
-    PREPARING: [{ label: "Ready for Payment", status: "AWAITING_PAYMENT" }],
-  };
-
-  const transitions = statusTransitions[order.status] || [];
+  const transitions = getStaffStatusActions(order.status).filter(
+    (action) => action.nextStatus !== "AWAITING_PAYMENT"
+  );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-2xl border bg-card p-5 shadow-[0_4px_16px_rgba(51,51,51,0.05)] sm:flex-row sm:items-center">
+    <div className="staff-detail-page space-y-6">
+      <div className="staff-detail-header flex flex-col gap-4 rounded-2xl border bg-card p-5 shadow-[0_4px_16px_rgba(51,51,51,0.05)] sm:flex-row sm:items-center">
         <Link href="/staff/orders">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-1" />
@@ -114,10 +154,10 @@ export function OrderDetailView({ order }: OrderDetailProps) {
           </Button>
         </Link>
         <div className="flex-1">
-          <h1 className="font-heading text-3xl font-bold">
+          <h1 className="staff-page-title font-heading text-3xl font-bold">
             Order #{order.orderNumber}
           </h1>
-          <p className="text-muted-foreground text-sm">
+          <p className="staff-page-subtitle text-muted-foreground text-sm">
             Table {order.tableCode} &middot; {order.customerName} &middot;{" "}
             {new Date(order.createdAt).toLocaleString()}
           </p>
@@ -125,9 +165,9 @@ export function OrderDetailView({ order }: OrderDetailProps) {
         <StatusBadge status={order.status} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="staff-detail-grid grid gap-6 lg:grid-cols-3">
         {/* Main content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="staff-detail-main space-y-6 lg:col-span-2">
           {/* Order Items */}
           <Card>
             <CardHeader>
@@ -195,9 +235,9 @@ export function OrderDetailView({ order }: OrderDetailProps) {
                 <div className="flex flex-wrap gap-2">
                   {transitions.map((t) => (
                     <Button
-                      key={t.status}
+                      key={t.nextStatus}
                       variant={t.variant || "default"}
-                      onClick={() => handleStatusUpdate(t.status)}
+                      onClick={() => handleStatusUpdate(t.nextStatus)}
                     >
                       {t.label}
                     </Button>
@@ -210,11 +250,14 @@ export function OrderDetailView({ order }: OrderDetailProps) {
           {/* Payment Collection (for AWAITING_PAYMENT status) */}
           {(order.status === "AWAITING_PAYMENT" ||
             (order.status === "PAID_SYNC_FAILED" && !order.paymentType)) && (
-            <PaymentSelector onPayment={handlePayment} />
+            <PaymentSelector
+              total={Number(order.total)}
+              onPayment={handlePayment}
+            />
           )}
 
           {/* Retry for failed syncs */}
-          {order.status === "PAID_SYNC_FAILED" && order.paymentType && (
+          {order.loyverseSyncError && order.paymentType && !receiptNumber && (
             <Card>
               <CardHeader>
                 <CardTitle>Sync Failed</CardTitle>
@@ -231,12 +274,16 @@ export function OrderDetailView({ order }: OrderDetailProps) {
           )}
 
           {receiptNumber && (
-            <PrintableReceiptCard order={order} receiptNumber={receiptNumber} />
+            <PrintableReceiptCard
+              order={order}
+              receiptNumber={receiptNumber}
+              cashPayment={cashPaymentSummary}
+            />
           )}
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="staff-detail-sidebar space-y-6">
           {/* Payment Info */}
           <Card>
             <CardHeader>
@@ -258,6 +305,22 @@ export function OrderDetailView({ order }: OrderDetailProps) {
                         {receiptNumber}
                       </span>
                     </div>
+                  )}
+                  {cashPaymentSummary && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Cash</span>
+                        <span className="font-semibold">
+                          {formatReceiptMoney(cashPaymentSummary.received)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Change</span>
+                        <span className="font-semibold text-primary">
+                          {formatReceiptMoney(cashPaymentSummary.change)}
+                        </span>
+                      </div>
+                    </>
                   )}
                 </div>
               ) : (
@@ -309,9 +372,11 @@ export function OrderDetailView({ order }: OrderDetailProps) {
 function PrintableReceiptCard({
   order,
   receiptNumber,
+  cashPayment,
 }: {
   order: OrderDetailProps["order"];
   receiptNumber: string;
+  cashPayment: CashPaymentSummary | null;
 }) {
   async function handleCopyReceipt() {
     try {
@@ -391,6 +456,18 @@ function PrintableReceiptCard({
                 <span>{order.paymentType.name}</span>
               </div>
             )}
+            {cashPayment && (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-neutral-500">Cash received</span>
+                  <span>{formatReceiptMoney(cashPayment.received)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-500">Change</span>
+                  <span>{formatReceiptMoney(cashPayment.change)}</span>
+                </div>
+              </>
+            )}
           </div>
 
           <Separator className="my-4 bg-neutral-200" />
@@ -444,15 +521,18 @@ function PrintableReceiptCard({
 }
 
 function PaymentSelector({
+  total,
   onPayment,
 }: {
-  onPayment: (paymentTypeId: string) => void;
+  total: number;
+  onPayment: (paymentTypeId: string, cashPayment?: CashPaymentSummary) => void;
 }) {
   const [paymentTypes, setPaymentTypes] = useState<
-    Array<{ id: string; name: string }>
+    Array<{ id: string; name: string; type: string }>
   >([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [cashReceived, setCashReceived] = useState("");
 
   useEffect(() => {
     async function fetchPaymentTypes() {
@@ -479,6 +559,26 @@ function PaymentSelector({
       </Card>
     );
   }
+
+  const selectedPaymentType = paymentTypes.find((pt) => pt.id === selectedId);
+  const isCashPayment =
+    selectedPaymentType !== undefined && isCashPaymentType(selectedPaymentType);
+  const cashReceivedNumber = Number(cashReceived);
+  const hasCashReceived =
+    cashReceived.trim() !== "" && Number.isFinite(cashReceivedNumber);
+  const cashChange = hasCashReceived
+    ? calculateCashChange({ total, received: cashReceivedNumber })
+    : null;
+  const canConfirmCashPayment =
+    !isCashPayment || (cashChange !== null && cashChange.isEnough);
+  const cashPaymentSummary =
+    isCashPayment && cashChange
+      ? {
+          received: cashReceivedNumber,
+          change: cashChange.change,
+          total,
+        }
+      : undefined;
 
   return (
     <Card>
@@ -508,10 +608,41 @@ function PaymentSelector({
             </label>
           ))}
         </div>
+        {isCashPayment && (
+          <div className="rounded-2xl border bg-muted/35 p-3">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">Cash received</p>
+                <p className="text-xs text-muted-foreground">
+                  Total due: {formatReceiptMoney(total)}
+                </p>
+              </div>
+              {cashChange?.isEnough && (
+                <div className="rounded-full bg-accent/40 px-3 py-1 text-xs font-semibold text-accent-foreground">
+                  Change {formatReceiptMoney(cashChange.change)}
+                </div>
+              )}
+            </div>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              value={cashReceived}
+              onChange={(event) => setCashReceived(event.target.value)}
+              placeholder="Enter cash amount"
+            />
+            {cashChange && !cashChange.isEnough && (
+              <p className="mt-2 text-xs font-semibold text-destructive">
+                Still short {formatReceiptMoney(cashChange.remaining)}
+              </p>
+            )}
+          </div>
+        )}
         <Button
           className="w-full"
-          disabled={!selectedId}
-          onClick={() => selectedId && onPayment(selectedId)}
+          disabled={!selectedId || !canConfirmCashPayment}
+          onClick={() => selectedId && onPayment(selectedId, cashPaymentSummary)}
         >
           Confirm Payment
         </Button>

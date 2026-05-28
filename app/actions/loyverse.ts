@@ -148,3 +148,51 @@ export async function retryReceiptAction(orderId: string) {
     order.cashReceived === null ? undefined : Number(order.cashReceived)
   );
 }
+
+export async function resetMenuAction() {
+  try {
+    // Delete in correct order to respect foreign key constraints:
+    // 1. OrderItems (depend on Item and Variant)
+    // 2. ItemModifiers (depend on Item)
+    // 3. Variants (depend on Item)
+    // 4. Items (depend on Category)
+    // 5. Categories
+
+    const deletedOrderItems = await prisma.orderItem.deleteMany({});
+    const deletedModifiers = await prisma.itemModifier.deleteMany({});
+    const deletedVariants = await prisma.variant.deleteMany({});
+    const deletedItems = await prisma.item.deleteMany({});
+    const deletedCategories = await prisma.category.deleteMany({});
+
+    const totalDeleted =
+      deletedItems.count + deletedCategories.count + deletedVariants.count + deletedModifiers.count + deletedOrderItems.count;
+
+    return { success: true, data: { deleted: totalDeleted } };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { success: false, error: message };
+  }
+}
+
+export async function resetPaymentTypesAction() {
+  try {
+    // Clear paymentTypeId from orders that reference payment types
+    await prisma.order.updateMany({
+      where: {
+        paymentTypeId: {
+          not: null,
+        },
+      },
+      data: {
+        paymentTypeId: null,
+      },
+    });
+
+    // Now delete all payment types
+    const deletedPaymentTypes = await prisma.paymentType.deleteMany({});
+    return { success: true, data: { deleted: deletedPaymentTypes.count } };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { success: false, error: message };
+  }
+}

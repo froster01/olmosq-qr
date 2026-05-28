@@ -1,3 +1,5 @@
+export type Temperature = "hot" | "cold";
+
 export interface CartItem {
   itemId: string;
   itemName: string;
@@ -8,4 +10,5 @@ export interface CartItem {
   modifierNames: string[];
   notes?: string;
   unitPrice: number;
+  temperature?: Temperature;
 }

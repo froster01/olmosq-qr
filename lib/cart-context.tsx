@@ -28,14 +28,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addItem = useCallback((item: CartItem) => {
     setItems((prev) => {
-      // Check for exact match (same item + variant + modifiers + notes)
+      // Check for exact match (same item + variant + modifiers + notes + temperature)
       const existingIndex = prev.findIndex(
         (existing) =>
           existing.itemId === item.itemId &&
           existing.variantId === item.variantId &&
           existing.modifierIds.length === item.modifierIds.length &&
           existing.modifierIds.every((id) => item.modifierIds.includes(id)) &&
-          existing.notes === item.notes
+          existing.notes === item.notes &&
+          existing.temperature === item.temperature
       );
 
       if (existingIndex >= 0) {

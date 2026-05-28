@@ -1,8 +1,7 @@
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Clock3, ReceiptText, Wallet } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { BrandMark } from "@/components/brand-mark";
 import { StatusBadge } from "@/components/staff/status-badge";
 import { formatOrderDisplayNumber } from "@/lib/shifts/shift-rules";
@@ -21,10 +20,43 @@ type ConfirmationOrderItem = {
   id: string;
   quantity: number;
   unitPrice: unknown;
+  notes: string | null;
   item: { name: string };
-  variant: { name: string } | null;
   modifiers: ConfirmationOrderModifier[];
 };
+
+function parseOrderItemNotes(notes: string | null) {
+  if (!notes) {
+    return { option: null, request: null };
+  }
+
+  const lines = notes
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  let option: string | null = null;
+  const requestLines: string[] = [];
+
+  for (const line of lines) {
+    if (line.toLowerCase().startsWith("option:")) {
+      option = line.slice(line.indexOf(":") + 1).trim();
+      continue;
+    }
+
+    if (line.toLowerCase().startsWith("special request:")) {
+      requestLines.push(line.slice(line.indexOf(":") + 1).trim());
+      continue;
+    }
+
+    requestLines.push(line);
+  }
+
+  return {
+    option,
+    request: requestLines.join(" "),
+  };
+}
 
 export default async function ConfirmationPage({ params }: PageProps) {
   const { orderId } = await params;
@@ -35,7 +67,6 @@ export default async function ConfirmationPage({ params }: PageProps) {
       items: {
         include: {
           item: true,
-          variant: true,
           modifiers: { include: { modifier: true } },
         },
       },
@@ -49,103 +80,128 @@ export default async function ConfirmationPage({ params }: PageProps) {
     shiftOrderNumber: order.shiftOrderNumber,
     orderNumber: order.orderNumber,
   });
+  const total = Number(order.total);
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-background p-5">
-      <Card className="w-full max-w-md">
-        <CardContent className="space-y-6 pt-6">
-          <div className="space-y-3 text-center">
-            <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-accent/35 text-primary">
-              <CheckCircle2 className="h-8 w-8" />
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <BrandMark className="size-7" />
-              <span className="font-heading font-bold text-primary">
-                Olmosq Coffee
-              </span>
-            </div>
-            <h1 className="font-heading text-3xl font-bold">
-              Pay at Counter
-            </h1>
-            <p className="text-muted-foreground">
-              Thank you, {order.customerName}. Show this order to the cashier.
-            </p>
-          </div>
-
-          <Separator />
-
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Order</span>
-              <span className="font-mono font-bold">{displayNumber}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Table</span>
-              <span>{order.tableCode}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Status</span>
-              <StatusBadge status={order.status} />
-            </div>
-          </div>
-
-          <Separator />
-
-          <div className="grid grid-cols-3 gap-2 text-center text-[11px] font-semibold text-muted-foreground">
-            {["Payment", "Preparing", "Done"].map((step) => (
-              <div key={step} className="space-y-2">
-                <div className="h-1 rounded-full bg-accent" />
-                <span>{step}</span>
-              </div>
-            ))}
-          </div>
-
-          <Separator />
-
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold">Order Summary</h3>
-            {order.items.map((oi: ConfirmationOrderItem) => (
-              <div
-                key={oi.id}
-                className="flex justify-between gap-4 rounded-xl bg-muted/45 p-3 text-sm"
-              >
-                <div className="flex-1">
-                  <span className="font-semibold">
-                    {oi.quantity}x {oi.item.name}
-                  </span>
-                  {oi.variant && (
-                    <span className="text-muted-foreground">
-                      {" "}
-                      ({oi.variant.name})
-                    </span>
-                  )}
-                  {oi.modifiers.length > 0 && (
-                    <span className="text-muted-foreground text-xs block">
-                      +{" "}
-                      {oi.modifiers
-                        .map((m: ConfirmationOrderModifier) => m.modifier.name)
-                        .join(", ")}
-                    </span>
-                  )}
-                </div>
-                <span className="font-bold text-primary">
-                  RM {(Number(oi.unitPrice) * oi.quantity).toFixed(2)}
+    <div className="customer-confirmation-page flex min-h-dvh flex-col items-center bg-background p-4">
+      <Card className="customer-confirmation-card w-full max-w-md overflow-hidden">
+        <CardContent className="p-0">
+          <section className="customer-confirmation-hero">
+            <div className="customer-confirmation-brand-row">
+              <div className="flex min-w-0 items-center gap-2">
+                <BrandMark className="size-8" />
+                <span className="truncate font-heading font-bold text-primary">
+                  Olmosq Coffee
                 </span>
               </div>
-            ))}
-          </div>
+              <span className="customer-confirmation-pay-chip">
+                <Wallet className="h-3.5 w-3.5" />
+                Counter pay
+              </span>
+            </div>
 
-          <Separator />
+            <div className="customer-confirmation-status-mark">
+              <CheckCircle2 className="h-7 w-7" />
+            </div>
 
-          <div className="flex justify-between font-heading text-xl font-bold">
-            <span>Total</span>
-            <span className="text-primary">RM {Number(order.total).toFixed(2)}</span>
-          </div>
+            <div className="customer-confirmation-heading">
+              <p>Thanks, {order.customerName}</p>
+              <h1>Show this ticket</h1>
+              <span>Cashier will collect payment before preparation starts.</span>
+            </div>
 
-          <p className="text-xs text-center text-muted-foreground">
-            Please pay at the counter. Your order will be prepared after staff
-            confirms payment.
-          </p>
+            <div className="customer-confirmation-ticket">
+              <div>
+                <span>Order</span>
+                <strong>{displayNumber}</strong>
+              </div>
+              <div>
+                <span>Table</span>
+                <strong>{order.tableCode}</strong>
+              </div>
+            </div>
+          </section>
+
+          <section className="customer-confirmation-section">
+            <div className="customer-confirmation-status-row">
+              <div>
+                <span className="customer-confirmation-label">Payment status</span>
+                <StatusBadge status={order.status} />
+              </div>
+              <div className="customer-confirmation-waiting">
+                <Clock3 className="h-4 w-4" />
+                Waiting for cashier
+              </div>
+            </div>
+
+            <div className="customer-confirmation-steps" aria-label="Order progress">
+              {["Payment", "Preparing", "Done"].map((step, index) => (
+                <div
+                  key={step}
+                  className="customer-confirmation-step"
+                  data-active={index === 0 ? "true" : undefined}
+                >
+                  <span />
+                  <p>{step}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="customer-confirmation-section">
+            <div className="customer-confirmation-section-title">
+              <ReceiptText className="h-4 w-4" />
+              Order summary
+            </div>
+
+            {order.items.map((oi: ConfirmationOrderItem) => {
+              const itemNotes = parseOrderItemNotes(oi.notes);
+
+              return (
+                <div key={oi.id} className="customer-confirmation-item">
+                  <div>
+                    <p>
+                      {oi.quantity}x {oi.item.name}
+                    </p>
+                    <div className="customer-confirmation-item-options">
+                      {itemNotes.option && (
+                        <span className="customer-confirmation-option-badge">
+                          <span>{itemNotes.option}</span>
+                        </span>
+                      )}
+                      {oi.modifiers.length > 0 && (
+                        <span className="customer-confirmation-option-badge">
+                          <span>
+                          {oi.modifiers
+                            .map(
+                              (m: ConfirmationOrderModifier) => m.modifier.name
+                            )
+                            .join(", ")}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                    {itemNotes.request && (
+                      <span className="customer-confirmation-item-note">
+                        Request: {itemNotes.request}
+                      </span>
+                    )}
+                  </div>
+                  <strong>
+                    RM {(Number(oi.unitPrice) * oi.quantity).toFixed(2)}
+                  </strong>
+                </div>
+              );
+            })}
+          </section>
+
+          <section className="customer-confirmation-total">
+            <div>
+              <span>Total to pay</span>
+              <strong>RM {total.toFixed(2)}</strong>
+            </div>
+            <p>Please show this screen to the cashier.</p>
+          </section>
         </CardContent>
       </Card>
     </div>

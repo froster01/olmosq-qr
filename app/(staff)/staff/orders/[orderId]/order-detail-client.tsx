@@ -200,19 +200,13 @@ export function OrderDetailView({ order }: OrderDetailProps) {
                     <span className="font-semibold">
                       {oi.quantity}x {oi.item.name}
                     </span>
-                    {oi.variant && (
-                      <span className="text-muted-foreground text-sm">
-                        {" "}
-                        ({oi.variant.name})
-                      </span>
-                    )}
                     {oi.modifiers.length > 0 && (
                       <span className="text-muted-foreground text-xs block">
                         + {oi.modifiers.map((m) => m.modifier.name).join(", ")}
                       </span>
                     )}
                     {oi.notes && (
-                      <span className="text-muted-foreground text-xs block italic">
+                      <span className="block whitespace-pre-line text-xs italic text-muted-foreground">
                         {oi.notes}
                       </span>
                     )}
@@ -506,7 +500,7 @@ function PrintableReceiptCard({
                     {oi.quantity}x {buildReceiptItemDescription(oi)}
                   </p>
                   {oi.notes && (
-                    <p className="text-xs italic text-neutral-500">
+                    <p className="whitespace-pre-line text-xs italic text-neutral-500">
                       {oi.notes}
                     </p>
                   )}

@@ -55,22 +55,30 @@ export function MenuBrowser({ categories, loading }: MenuBrowserProps) {
 
   return (
     <>
-      <Tabs defaultValue={categories[0]?.id} className="w-full">
-        <TabsList className="w-full flex justify-start overflow-x-auto bg-transparent p-0">
-          {categories.map((cat) => (
-            <TabsTrigger
-              key={cat.id}
-              value={cat.id}
-              className="shrink-0 border border-border bg-card"
-            >
-              {cat.name}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <Tabs
+        defaultValue={categories[0]?.id}
+        className="customer-menu-tabs w-full"
+      >
+        <div className="customer-category-shell">
+          <TabsList
+            variant="line"
+            className="customer-category-list scrollbar-hide"
+          >
+            {categories.map((cat) => (
+              <TabsTrigger
+                key={cat.id}
+                value={cat.id}
+                className="customer-category-trigger touch-manipulation"
+              >
+                {cat.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
 
         {categories.map((cat) => (
           <TabsContent key={cat.id} value={cat.id} className="mt-4">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <div className="customer-menu-grid grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
               {cat.items
                 .filter((item) => item.isAvailable)
                 .map((item) => (

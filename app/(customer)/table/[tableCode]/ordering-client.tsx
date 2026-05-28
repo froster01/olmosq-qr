@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, Coffee } from "lucide-react";
+import { ShoppingCart, Coffee, Wallet, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandMark } from "@/components/brand-mark";
 import { CartProvider, useCart } from "@/lib/cart-context";
@@ -77,17 +77,17 @@ function OrderingContent({
   }
 
   return (
-    <div className="min-h-dvh flex flex-col bg-background">
+    <div className="customer-order-page flex min-h-dvh flex-col bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-30 border-b bg-background/95 shadow-sm backdrop-blur">
-        <div className="flex h-16 items-center justify-between px-5">
-          <div className="flex items-center gap-2">
-            <BrandMark />
+      <header className="customer-header sticky top-0 z-30 border-b bg-background/95 shadow-sm backdrop-blur">
+        <div className="customer-header-inner flex h-16 items-center justify-between px-5">
+          <div className="customer-brand flex min-w-0 items-center gap-2">
+            <BrandMark className="customer-brand-mark" />
             <div>
-              <p className="font-heading text-base font-bold leading-tight text-primary">
+              <p className="customer-brand-name truncate font-heading text-base font-bold leading-tight text-primary">
                 Olmosq Coffee
               </p>
-              <p className="text-xs font-medium text-muted-foreground">
+              <p className="customer-table-chip text-xs font-medium text-muted-foreground">
                 Table {tableNumber}
               </p>
             </div>
@@ -95,7 +95,7 @@ function OrderingContent({
           <Button
             variant="outline"
             size="icon"
-            className="relative"
+            className="customer-cart-icon relative touch-manipulation active:scale-95 transition-transform"
             onClick={() => setCartOpen(true)}
             aria-label="Open cart"
           >
@@ -110,19 +110,38 @@ function OrderingContent({
       </header>
 
       {/* Menu */}
-      <div className="flex-1 space-y-5 px-5 py-5">
-        <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_4px_16px_rgba(51,51,51,0.05)]">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-full bg-accent/50 text-primary">
+      <div className="customer-menu-shell flex-1 space-y-5 px-5 py-5">
+        <section className="customer-hero rounded-2xl border border-border/70 bg-card p-5 shadow-[0_4px_16px_rgba(51,51,51,0.05)]">
+          <div className="customer-hero-content flex items-start gap-3">
+            <div className="customer-hero-icon flex size-10 items-center justify-center rounded-full bg-accent/50 text-primary">
               <Coffee className="h-5 w-5" />
             </div>
-            <div>
-              <p className="font-heading text-xl font-bold leading-tight">
-                Fresh from the bar
+            <div className="customer-hero-copy-wrap min-w-0 flex-1">
+              <div className="customer-hero-topline flex items-center justify-between gap-2">
+                <p className="customer-hero-kicker font-semibold uppercase tracking-wide text-primary">
+                  Start here
+                </p>
+                <span className="customer-hero-badge inline-flex items-center gap-1 rounded-full bg-accent/35 px-2.5 py-1 text-xs font-bold text-accent-foreground">
+                  <Wallet className="h-3.5 w-3.5" />
+                  Counter pay
+                </span>
+              </div>
+              <h1 className="customer-hero-title font-heading text-xl font-bold leading-tight">
+                Pick your favourites
+              </h1>
+              <p className="customer-hero-copy text-sm text-muted-foreground">
+                Pay at cashier, then we prepare it.
               </p>
-              <p className="text-sm text-muted-foreground">
-                Choose your favourites, then pay at the counter to start prep.
-              </p>
+              <div className="customer-hero-flow" aria-label="Order flow">
+                <span>
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Order here
+                </span>
+                <span>
+                  <Wallet className="h-3.5 w-3.5" />
+                  Pay counter
+                </span>
+              </div>
             </div>
           </div>
         </section>
@@ -131,14 +150,21 @@ function OrderingContent({
 
       {/* Floating cart button when items in cart */}
       {items.length > 0 && (
-        <div className="sticky bottom-0 z-20 border-t bg-background/95 p-4 backdrop-blur">
+        <div className="customer-sticky-cart sticky bottom-0 z-20 bg-background/95 p-4 backdrop-blur">
           <Button
-            className="w-full"
+            className="customer-sticky-cart-button w-full touch-manipulation transition-transform active:scale-[0.98]"
             size="lg"
             onClick={() => setCartOpen(true)}
           >
-            <ShoppingCart className="h-4 w-4 mr-2" />
-            Pay at Counter ({items.length}) - RM {subtotal.toFixed(2)}
+            <span className="customer-sticky-cart-count" aria-hidden="true">
+              <ShoppingCart className="h-4 w-4" />
+              {items.length}
+            </span>
+            <span className="customer-sticky-cart-copy">
+              <span>Cart total</span>
+              <strong>RM {subtotal.toFixed(2)}</strong>
+            </span>
+            <span className="customer-sticky-cart-action">View cart</span>
           </Button>
         </div>
       )}

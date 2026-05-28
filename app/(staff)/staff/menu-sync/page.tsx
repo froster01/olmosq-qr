@@ -10,15 +10,25 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { syncMenuAction, syncPaymentTypesAction } from "@/app/actions/loyverse";
+import {
+  syncMenuAction,
+  syncPaymentTypesAction,
+  resetMenuAction,
+  resetPaymentTypesAction,
+} from "@/app/actions/loyverse";
+import { Download, RotateCcw } from "lucide-react";
 
 type SyncStatus = "idle" | "loading" | "success" | "error";
 
 export default function MenuSyncPage() {
   const [menuStatus, setMenuStatus] = useState<SyncStatus>("idle");
   const [paymentStatus, setPaymentStatus] = useState<SyncStatus>("idle");
+  const [resetMenuStatus, setResetMenuStatus] = useState<SyncStatus>("idle");
+  const [resetPaymentStatus, setResetPaymentStatus] = useState<SyncStatus>("idle");
   const [menuResult, setMenuResult] = useState<string>("");
   const [paymentResult, setPaymentResult] = useState<string>("");
+  const [resetMenuResult, setResetMenuResult] = useState<string>("");
+  const [resetPaymentResult, setResetPaymentResult] = useState<string>("");
   const [error, setError] = useState<string>("");
 
   async function handleSyncMenu() {
@@ -49,6 +59,32 @@ export default function MenuSyncPage() {
     }
   }
 
+  async function handleResetMenu() {
+    setResetMenuStatus("loading");
+    setError("");
+    const result = await resetMenuAction();
+    if (result.success && result.data) {
+      setResetMenuStatus("success");
+      setResetMenuResult(`${result.data.deleted} items deleted`);
+    } else {
+      setResetMenuStatus("error");
+      setError(result.error || "Reset failed");
+    }
+  }
+
+  async function handleResetPaymentTypes() {
+    setResetPaymentStatus("loading");
+    setError("");
+    const result = await resetPaymentTypesAction();
+    if (result.success && result.data) {
+      setResetPaymentStatus("success");
+      setResetPaymentResult(`${result.data.deleted} payment types deleted`);
+    } else {
+      setResetPaymentStatus("error");
+      setError(result.error || "Reset failed");
+    }
+  }
+
   return (
     <div className="staff-page space-y-6">
       <div className="staff-page-header">
@@ -71,7 +107,10 @@ export default function MenuSyncPage() {
       <div className="staff-sync-grid grid gap-4 md:grid-cols-[repeat(auto-fit,minmax(18rem,1fr))]">
         <Card className="staff-sync-card transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(51,51,51,0.08)]">
           <CardHeader>
-            <CardTitle>Menu Items</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5" />
+              Menu Items
+            </CardTitle>
             <CardDescription>
               Sync categories, items, variants, and modifiers from Loyverse
             </CardDescription>
@@ -102,7 +141,10 @@ export default function MenuSyncPage() {
 
         <Card className="staff-sync-card transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(51,51,51,0.08)]">
           <CardHeader>
-            <CardTitle>Payment Types</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5" />
+              Payment Types
+            </CardTitle>
             <CardDescription>
               Sync available payment types from Loyverse
             </CardDescription>
@@ -127,6 +169,76 @@ export default function MenuSyncPage() {
                 </Badge>
                 <span className="text-sm text-muted-foreground">
                   {paymentResult}
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="staff-sync-card transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(51,51,51,0.08)]">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5" />
+              Reset Menu
+            </CardTitle>
+            <CardDescription>
+              Delete all local menu items and categories
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              onClick={handleResetMenu}
+              disabled={resetMenuStatus === "loading"}
+              className="w-full"
+              size="lg"
+              variant="destructive"
+            >
+              {resetMenuStatus === "loading" ? "Resetting..." : "Reset Menu"}
+            </Button>
+            {resetMenuResult && (
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant={resetMenuStatus === "success" ? "default" : "destructive"}
+                >
+                  {resetMenuStatus === "success" ? "Success" : "Failed"}
+                </Badge>
+                <span className="text-sm text-muted-foreground">
+                  {resetMenuResult}
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="staff-sync-card transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(51,51,51,0.08)]">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5" />
+              Reset Payment Types
+            </CardTitle>
+            <CardDescription>
+              Delete all local payment types
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              onClick={handleResetPaymentTypes}
+              disabled={resetPaymentStatus === "loading"}
+              className="w-full"
+              size="lg"
+              variant="destructive"
+            >
+              {resetPaymentStatus === "loading" ? "Resetting..." : "Reset Payment Types"}
+            </Button>
+            {resetPaymentResult && (
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant={resetPaymentStatus === "success" ? "default" : "destructive"}
+                >
+                  {resetPaymentStatus === "success" ? "Success" : "Failed"}
+                </Badge>
+                <span className="text-sm text-muted-foreground">
+                  {resetPaymentResult}
                 </span>
               </div>
             )}

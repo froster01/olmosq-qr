@@ -20,6 +20,7 @@ const submitOrderSchema = z.object({
       unitPrice: z.number(),
       modifierIds: z.array(z.string()),
       notes: z.string().optional(),
+      temperature: z.enum(["hot", "cold"]).optional(),
     })
   ),
 });
@@ -35,6 +36,22 @@ const updateOrderStatusSchema = z.enum([
   "DONE",
   "CANCELLED",
 ]);
+
+function buildOrderItemNotes({
+  temperature,
+  notes,
+}: {
+  temperature?: "hot" | "cold";
+  notes?: string;
+}) {
+  const cleanNotes = notes?.trim();
+  const option = temperature
+    ? `Option: ${temperature === "hot" ? "Hot" : "Cold"}`
+    : null;
+  const request = cleanNotes ? `Special request: ${cleanNotes}` : null;
+
+  return [option, request].filter(Boolean).join("\n") || undefined;
+}
 
 export async function submitOrder(formData: FormData) {
   const raw = {
@@ -121,7 +138,10 @@ export async function submitOrder(formData: FormData) {
             variantId: item.variantId,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
-            notes: item.notes,
+            notes: buildOrderItemNotes({
+              temperature: item.temperature,
+              notes: item.notes,
+            }),
             modifiers: {
               create: item.modifierIds.map((modId) => ({
                 modifierId: modId,

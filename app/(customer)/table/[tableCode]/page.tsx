@@ -58,9 +58,9 @@ export default async function TableOrderingPage({ params }: PageProps) {
 
 function ShopClosed({ tableNumber }: { tableNumber: number }) {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-background p-5">
-      <Card className="w-full max-w-md">
-        <CardContent className="space-y-5 p-6 text-center">
+    <div className="customer-closed-page flex min-h-dvh items-center justify-center bg-background p-5">
+      <Card className="customer-closed-card w-full max-w-md">
+        <CardContent className="customer-closed-content space-y-5 p-6 text-center">
           <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-accent/45 text-primary">
             <Clock className="h-8 w-8" />
           </div>

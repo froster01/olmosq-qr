@@ -64,7 +64,7 @@ export function CashMovementForm({ disabled }: { disabled?: boolean }) {
           Cash Out
         </Button>
       </div>
-      <div className="grid gap-3 sm:grid-cols-[12rem_1fr]">
+      <div className="grid gap-3">
         <div className="space-y-2">
           <label className="text-sm font-semibold" htmlFor="movement-amount">
             Amount

@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
-import { CheckCircle2, Clock3, ReceiptText, Wallet } from "lucide-react";
+import { CheckCircle2, ReceiptText, Wallet } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { BrandMark } from "@/components/brand-mark";
-import { StatusBadge } from "@/components/staff/status-badge";
 import { formatOrderDisplayNumber } from "@/lib/shifts/shift-rules";
+import { OrderLiveTracker } from "@/components/customer/order-live-tracker";
 
 export const dynamic = "force-dynamic";
 
@@ -122,31 +122,11 @@ export default async function ConfirmationPage({ params }: PageProps) {
             </div>
           </section>
 
-          <section className="customer-confirmation-section">
-            <div className="customer-confirmation-status-row">
-              <div>
-                <span className="customer-confirmation-label">Payment status</span>
-                <StatusBadge status={order.status} />
-              </div>
-              <div className="customer-confirmation-waiting">
-                <Clock3 className="h-4 w-4" />
-                Waiting for cashier
-              </div>
-            </div>
-
-            <div className="customer-confirmation-steps" aria-label="Order progress">
-              {["Payment", "Preparing", "Done"].map((step, index) => (
-                <div
-                  key={step}
-                  className="customer-confirmation-step"
-                  data-active={index === 0 ? "true" : undefined}
-                >
-                  <span />
-                  <p>{step}</p>
-                </div>
-              ))}
-            </div>
-          </section>
+          <OrderLiveTracker
+            orderId={order.id}
+            initialStatus={order.status}
+            initialUpdatedAt={order.updatedAt.toISOString()}
+          />
 
           <section className="customer-confirmation-section">
             <div className="customer-confirmation-section-title">

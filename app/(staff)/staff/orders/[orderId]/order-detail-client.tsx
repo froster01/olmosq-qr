@@ -154,80 +154,82 @@ export function OrderDetailView({ order }: OrderDetailProps) {
     : [];
 
   return (
-    <div className="staff-detail-page space-y-6">
-      <div className="staff-detail-header flex flex-col gap-4 rounded-2xl border bg-card p-5 shadow-[0_4px_16px_rgba(51,51,51,0.05)] sm:flex-row sm:items-center">
+    <div className="staff-detail-page space-y-3">
+      <div className="staff-detail-header flex items-center gap-3 rounded-xl border bg-card p-3 shadow-[0_4px_16px_rgba(51,51,51,0.05)]">
         <Link href="/staff/orders">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
+          <Button variant="ghost" size="sm" className="h-7 px-2">
+            <ArrowLeft className="h-3.5 w-3.5 mr-0.5" />
             Back
           </Button>
         </Link>
-        <div className="flex-1">
-          <h1 className="staff-page-title font-heading text-3xl font-bold">
-            Order {displayNumber}
-          </h1>
-          <p className="staff-page-subtitle text-muted-foreground text-sm">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h1 className="staff-page-title font-heading text-xl font-bold leading-tight truncate">
+              Order {displayNumber}
+            </h1>
+            <StatusBadge status={order.status} />
+          </div>
+          <p className="staff-page-subtitle text-muted-foreground text-xs leading-snug truncate">
             Table {order.tableCode} &middot; {order.customerName} &middot;{" "}
             {new Date(order.createdAt).toLocaleString()}
           </p>
         </div>
-        <StatusBadge status={order.status} />
       </div>
 
       {!order.canEdit && (
-        <Card className="border-muted bg-muted/25">
-          <CardContent className="p-4 text-sm text-muted-foreground">
-            This order belongs to a closed shift, so it is report-only.
+        <Card size="sm" className="border-muted bg-muted/25">
+          <CardContent className="p-3 text-xs text-muted-foreground">
+            This order belongs to a closed shift. Report-only.
           </CardContent>
         </Card>
       )}
 
-      <div className="staff-detail-grid grid gap-6 lg:grid-cols-3">
+      <div className="staff-order-detail-grid grid gap-3">
         {/* Main content */}
-        <div className="staff-detail-main space-y-6 lg:col-span-2">
+        <div className="staff-order-detail-main space-y-3">
           {/* Order Items */}
-          <Card>
+          <Card size="sm">
             <CardHeader>
               <CardTitle>Items</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-1.5">
               {order.items.map((oi) => (
                 <div
                   key={oi.id}
-                  className="flex justify-between gap-4 rounded-xl bg-muted/45 p-3"
+                  className="flex justify-between gap-3 rounded-lg bg-muted/45 px-3 py-2"
                 >
-                  <div>
-                    <span className="font-semibold">
+                  <div className="min-w-0">
+                    <span className="text-sm font-semibold">
                       {oi.quantity}x {oi.item.name}
                     </span>
                     {oi.modifiers.length > 0 && (
-                      <span className="text-muted-foreground text-xs block">
+                      <span className="text-muted-foreground text-xs block leading-tight">
                         + {oi.modifiers.map((m) => m.modifier.name).join(", ")}
                       </span>
                     )}
                     {oi.notes && (
-                      <span className="block whitespace-pre-line text-xs italic text-muted-foreground">
+                      <span className="block whitespace-pre-line text-xs italic text-muted-foreground leading-tight">
                         {oi.notes}
                       </span>
                     )}
                   </div>
-                  <span className="font-bold text-primary">
+                  <span className="text-sm font-bold text-primary shrink-0">
                     RM {(Number(oi.unitPrice) * oi.quantity).toFixed(2)}
                   </span>
                 </div>
               ))}
-              <Separator />
-              <div className="flex justify-between text-sm">
+              <Separator className="my-1" />
+              <div className="flex justify-between text-xs">
                 <span>Subtotal</span>
                 <span>RM {Number(order.subtotal).toFixed(2)}</span>
               </div>
               {Number(order.tax) > 0 && (
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs">
                   <span>Tax</span>
                   <span>RM {Number(order.tax).toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between font-heading text-xl font-bold">
+              <div className="flex justify-between font-heading text-lg font-bold">
                 <span>Total</span>
                 <span className="text-primary">
                   RM {Number(order.total).toFixed(2)}
@@ -238,16 +240,17 @@ export function OrderDetailView({ order }: OrderDetailProps) {
 
           {/* Actions */}
           {transitions.length > 0 && (
-            <Card>
+            <Card size="sm">
               <CardHeader>
                 <CardTitle>Actions</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {transitions.map((t) => (
                     <Button
                       key={t.nextStatus}
                       variant={t.variant || "default"}
+                      size="sm"
                       onClick={() => handleStatusUpdate(t.nextStatus)}
                     >
                       {t.label}
@@ -273,40 +276,33 @@ export function OrderDetailView({ order }: OrderDetailProps) {
             order.loyverseSyncError &&
             order.paymentType &&
             !receiptNumber && (
-            <Card>
+            <Card size="sm">
               <CardHeader>
                 <CardTitle>Sync Failed</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-2">
                 {order.loyverseSyncError && (
-                  <p className="text-sm text-destructive">
+                  <p className="text-xs text-destructive">
                     {order.loyverseSyncError}
                   </p>
                 )}
-                <Button onClick={handleRetry}>Retry Sync</Button>
+                <Button size="sm" onClick={handleRetry}>Retry Sync</Button>
               </CardContent>
             </Card>
           )}
 
-          {receiptNumber && (
-            <PrintableReceiptCard
-              order={order}
-              receiptNumber={receiptNumber}
-              cashPayment={cashPaymentSummary}
-            />
-          )}
         </div>
 
         {/* Sidebar */}
-        <div className="staff-detail-sidebar space-y-6">
+        <div className="staff-order-detail-sidebar space-y-3">
           {/* Payment Info */}
-          <Card>
+          <Card size="sm" className="staff-order-payment-card">
             <CardHeader>
               <CardTitle>Payment</CardTitle>
             </CardHeader>
             <CardContent>
               {order.paymentType ? (
-                <div className="space-y-2 text-sm">
+                <div className="space-y-1 text-[0.8rem]">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Method</span>
                     <span className="font-semibold">
@@ -316,7 +312,7 @@ export function OrderDetailView({ order }: OrderDetailProps) {
                   {receiptNumber && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Receipt</span>
-                      <span className="font-mono text-xs">
+                      <span className="font-mono text-[0.65rem]">
                         {receiptNumber}
                       </span>
                     </div>
@@ -339,45 +335,21 @@ export function OrderDetailView({ order }: OrderDetailProps) {
                   )}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Awaiting payment
                 </p>
               )}
             </CardContent>
           </Card>
 
-          {/* Sync Logs */}
-          {order.syncLogs.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Sync Log</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {order.syncLogs.map((log) => (
-                  <div key={log.id} className="text-xs space-y-1">
-                    <div className="flex justify-between">
-                      <span>{log.action}</span>
-                      <span
-                        className={
-                          log.status === "success"
-                            ? "text-green-600"
-                            : "text-destructive"
-                        }
-                      >
-                        {log.status}
-                      </span>
-                    </div>
-                    {log.errorMessage && (
-                      <p className="text-destructive">{log.errorMessage}</p>
-                    )}
-                    <p className="text-muted-foreground">
-                      {new Date(log.createdAt).toLocaleString()}
-                    </p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+          {receiptNumber && (
+            <PrintableReceiptCard
+              order={order}
+              receiptNumber={receiptNumber}
+              cashPayment={cashPaymentSummary}
+            />
           )}
+
         </div>
       </div>
     </div>
@@ -412,43 +384,38 @@ function PrintableReceiptCard({
   }
 
   return (
-    <Card className="print-receipt-area overflow-hidden">
-      <CardHeader className="print-hide flex flex-row items-start justify-between gap-3">
-        <div>
-          <CardTitle className="flex items-center gap-2">
-            <ReceiptText className="h-5 w-5 text-primary" />
-            Receipt
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Ready to print from this device
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleCopyReceipt}>
-            <Clipboard className="h-4 w-4" />
+    <Card size="sm" className="print-receipt-area overflow-hidden">
+      <CardHeader className="print-hide flex flex-row items-center justify-between gap-2">
+        <CardTitle className="flex items-center gap-1.5">
+          <ReceiptText className="h-4 w-4 text-primary" />
+          Receipt
+        </CardTitle>
+        <div className="flex gap-1.5">
+          <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={handleCopyReceipt}>
+            <Clipboard className="h-3.5 w-3.5" />
             Copy
           </Button>
-          <Button size="sm" onClick={handlePrint}>
-            <Printer className="h-4 w-4" />
+          <Button size="sm" className="h-7 px-2 text-xs" onClick={handlePrint}>
+            <Printer className="h-3.5 w-3.5" />
             Print
           </Button>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="mx-auto max-w-sm rounded-2xl border bg-white p-5 text-neutral-950 shadow-sm print:border-0 print:p-0 print:shadow-none">
+        <div className="mx-auto max-w-sm rounded-xl border bg-white p-3 text-neutral-950 shadow-sm print:border-0 print:p-0 print:shadow-none">
           <div className="text-center">
-            <p className="font-heading text-2xl font-bold">Olmosq Cafe</p>
-            <p className="text-xs uppercase tracking-wide text-neutral-500">
+            <p className="font-heading text-xl font-bold">Olmosq Cafe</p>
+            <p className="text-[0.65rem] uppercase tracking-wide text-neutral-500">
               QR Order Receipt
             </p>
           </div>
 
-          <Separator className="my-4 bg-neutral-200" />
+          <Separator className="my-3 bg-neutral-200" />
 
-          <div className="space-y-1 text-sm">
-            <div className="flex justify-between gap-4">
+          <div className="space-y-0.5 text-xs">
+            <div className="flex justify-between gap-3">
               <span className="text-neutral-500">Receipt</span>
-              <span className="font-mono text-xs font-semibold">
+              <span className="font-mono text-[0.65rem] font-semibold">
                 {receiptNumber}
               </span>
             </div>
@@ -464,7 +431,7 @@ function PrintableReceiptCard({
               <span className="text-neutral-500">Customer</span>
               <span>{order.customerName}</span>
             </div>
-            <div className="flex justify-between gap-4">
+            <div className="flex justify-between gap-3">
               <span className="text-neutral-500">Date</span>
               <span className="text-right">
                 {new Date(order.createdAt).toLocaleString()}
@@ -490,31 +457,31 @@ function PrintableReceiptCard({
             )}
           </div>
 
-          <Separator className="my-4 bg-neutral-200" />
+          <Separator className="my-3 bg-neutral-200" />
 
-          <div className="space-y-3">
+          <div className="space-y-1.5">
             {order.items.map((oi) => (
-              <div key={oi.id} className="grid grid-cols-[1fr_auto] gap-3">
+              <div key={oi.id} className="grid grid-cols-[1fr_auto] gap-2">
                 <div>
-                  <p className="text-sm font-semibold">
+                  <p className="text-xs font-semibold">
                     {oi.quantity}x {buildReceiptItemDescription(oi)}
                   </p>
                   {oi.notes && (
-                    <p className="whitespace-pre-line text-xs italic text-neutral-500">
+                    <p className="whitespace-pre-line text-[0.65rem] italic text-neutral-500 leading-tight">
                       {oi.notes}
                     </p>
                   )}
                 </div>
-                <span className="text-sm font-semibold">
+                <span className="text-xs font-semibold">
                   {formatReceiptMoney(Number(oi.unitPrice) * oi.quantity)}
                 </span>
               </div>
             ))}
           </div>
 
-          <Separator className="my-4 bg-neutral-200" />
+          <Separator className="my-3 bg-neutral-200" />
 
-          <div className="space-y-1 text-sm">
+          <div className="space-y-0.5 text-xs">
             <div className="flex justify-between">
               <span>Subtotal</span>
               <span>{formatReceiptMoney(Number(order.subtotal))}</span>
@@ -525,13 +492,13 @@ function PrintableReceiptCard({
                 <span>{formatReceiptMoney(Number(order.tax))}</span>
               </div>
             )}
-            <div className="flex justify-between pt-2 font-heading text-xl font-bold">
+            <div className="flex justify-between pt-1 font-heading text-base font-bold">
               <span>Total</span>
               <span>{formatReceiptMoney(Number(order.total))}</span>
             </div>
           </div>
 
-          <p className="mt-5 text-center text-xs text-neutral-500">
+          <p className="mt-3 text-center text-[0.65rem] text-neutral-500">
             Thank you. Please keep this receipt for reference.
           </p>
         </div>
@@ -601,16 +568,16 @@ function PaymentSelector({
       : undefined;
 
   return (
-    <Card>
+    <Card size="sm">
       <CardHeader>
         <CardTitle>Collect Payment</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="space-y-2">
+      <CardContent className="space-y-2">
+        <div className="space-y-1.5">
           {paymentTypes.map((pt) => (
             <label
               key={pt.id}
-              className={`flex cursor-pointer items-center rounded-xl border p-3 transition-colors ${
+              className={`flex cursor-pointer items-center rounded-lg border px-3 py-2 transition-colors ${
                 selectedId === pt.id
                   ? "border-primary bg-accent/35"
                   : "bg-card hover:bg-muted"
@@ -629,16 +596,16 @@ function PaymentSelector({
           ))}
         </div>
         {isCashPayment && (
-          <div className="rounded-2xl border bg-muted/35 p-3">
-            <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="rounded-lg border bg-muted/35 p-2.5">
+            <div className="mb-2 flex items-center justify-between gap-2">
               <div>
-                <p className="text-sm font-semibold">Cash received</p>
-                <p className="text-xs text-muted-foreground">
-                  Total due: {formatReceiptMoney(total)}
+                <p className="text-xs font-semibold">Cash received</p>
+                <p className="text-[0.65rem] text-muted-foreground">
+                  Due: {formatReceiptMoney(total)}
                 </p>
               </div>
               {cashChange?.isEnough && (
-                <div className="rounded-full bg-accent/40 px-3 py-1 text-xs font-semibold text-accent-foreground">
+                <div className="rounded-full bg-accent/40 px-2 py-0.5 text-[0.65rem] font-semibold text-accent-foreground">
                   Change {formatReceiptMoney(cashChange.change)}
                 </div>
               )}
@@ -651,16 +618,17 @@ function PaymentSelector({
               value={cashReceived}
               onChange={(event) => setCashReceived(event.target.value)}
               placeholder="Enter cash amount"
+              className="h-9 text-sm"
             />
             {cashChange && !cashChange.isEnough && (
-              <p className="mt-2 text-xs font-semibold text-destructive">
-                Still short {formatReceiptMoney(cashChange.remaining)}
+              <p className="mt-1.5 text-[0.65rem] font-semibold text-destructive">
+                Short {formatReceiptMoney(cashChange.remaining)}
               </p>
             )}
           </div>
         )}
         <Button
-          className="w-full"
+          className="w-full h-9 text-sm"
           disabled={!selectedId || !canConfirmCashPayment}
           onClick={() => selectedId && onPayment(selectedId, cashPaymentSummary)}
         >

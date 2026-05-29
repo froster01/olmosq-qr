@@ -2,7 +2,7 @@
 
 import { FormEvent, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, Lock, Unlock } from "lucide-react";
+import { ArrowRight, Clock, Lock, Unlock } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -90,8 +90,8 @@ export function ShiftControl({
         "staff-shift-control flex shrink-0 items-center gap-2 border bg-card shadow-sm",
         variant === "header"
           ? "ml-auto rounded-full px-2 py-1"
-          : "w-full rounded-xl px-3 py-2 sm:w-auto",
-        !shift && "border-destructive/25 bg-destructive/5"
+          : "w-full border-transparent bg-transparent p-0 shadow-none sm:w-auto",
+        !shift && variant === "header" && "border-destructive/25 bg-destructive/5"
       )}
     >
       {variant === "header" && (
@@ -118,15 +118,30 @@ export function ShiftControl({
         onClick={() => (shift ? setCloseDialog(true) : setOpenDialog(true))}
         className={cn(
           "staff-shift-button h-9",
-          variant === "header" ? "rounded-full" : "rounded-lg"
+          variant === "header" ? "rounded-full" : "h-12 rounded-lg px-3.5",
+          shift &&
+            variant === "page" &&
+            "gap-3 border-destructive/25 bg-destructive/5 text-destructive shadow-none hover:border-destructive/40 hover:bg-destructive/10"
         )}
       >
-        {shift ? (
-          <Lock className="h-4 w-4" />
+        {shift && variant === "page" ? (
+          <>
+            <span className="grid size-7 place-items-center rounded-md bg-destructive/10">
+              <Lock className="h-3.5 w-3.5" />
+            </span>
+            <span>Close Shift</span>
+            <ArrowRight className="ml-1 h-3.5 w-3.5 opacity-70 transition-transform group-hover/button:translate-x-0.5" />
+          </>
         ) : (
-          <Unlock className="h-4 w-4" />
+          <>
+            {shift ? (
+              <Lock className="h-4 w-4" />
+            ) : (
+              <Unlock className="h-4 w-4" />
+            )}
+            {shift ? "Close Shift" : "Open Shift"}
+          </>
         )}
-        {shift ? "Close Shift" : "Open Shift"}
       </Button>
 
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>

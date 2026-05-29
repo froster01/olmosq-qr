@@ -1,0 +1,1 @@
+-- Temperature choices are stored in OrderItem.notes; no schema change required.

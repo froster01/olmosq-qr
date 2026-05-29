@@ -1,0 +1,1 @@
+ALTER TABLE "Category" ADD COLUMN "isVisibleInMenu" BOOLEAN NOT NULL DEFAULT true;

@@ -18,6 +18,7 @@ export default async function TablesPage() {
         number: table.number,
         name: table.name,
         isActive: table.isActive,
+        orderingUrl: url,
         qrDataUrl,
       };
     })

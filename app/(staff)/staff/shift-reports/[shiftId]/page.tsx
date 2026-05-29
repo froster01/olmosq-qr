@@ -152,13 +152,13 @@ export default async function ShiftReportPage({ params }: PageProps) {
                   <Link
                     key={order.id}
                     href={`/staff/orders/${order.id}`}
-                    className="staff-report-row grid gap-3 rounded-2xl border bg-card p-3 transition-colors hover:border-primary/50 hover:bg-accent/15 md:grid-cols-[1fr_auto_auto]"
+                    className="staff-report-row staff-shift-report-order-row grid gap-3 rounded-xl border bg-card p-3 transition-colors hover:border-primary/50 hover:bg-accent/15"
                   >
-                    <div>
+                    <div className="staff-shift-report-order-main min-w-0">
                       <p className="text-xs font-bold uppercase text-muted-foreground">
                         Table {order.tableCode}
                       </p>
-                      <p className="font-heading text-xl font-bold">
+                      <p className="font-heading text-xl font-bold leading-tight">
                         Order{" "}
                         {formatOrderDisplayNumber({
                           shiftOrderNumber: order.shiftOrderNumber,
@@ -170,7 +170,7 @@ export default async function ShiftReportPage({ params }: PageProps) {
                         {formatTime(order.createdAt)}
                       </p>
                     </div>
-                    <div className="staff-report-facts grid grid-cols-3 gap-2 rounded-2xl bg-muted/35 p-2 text-sm md:min-w-72">
+                    <div className="staff-report-facts staff-shift-report-order-facts grid gap-2 text-sm">
                       <ReportLine
                         label="Total"
                         value={formatReceiptMoney(Number(order.total))}
@@ -184,7 +184,7 @@ export default async function ShiftReportPage({ params }: PageProps) {
                         value={order.paymentType?.name ?? "-"}
                       />
                     </div>
-                    <div className="flex items-center md:justify-end">
+                    <div className="staff-shift-report-order-status flex items-center">
                       <StatusBadge status={order.status} />
                     </div>
                   </Link>

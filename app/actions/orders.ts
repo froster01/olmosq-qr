@@ -6,7 +6,12 @@ import {
   getUniqueOrderItemIds,
   hasAllRequestedItems,
 } from "@/lib/orders/submit-order-validation";
+import {
+  notifyNewStaffOrder,
+  notifyStaffSubscriptions,
+} from "@/lib/push/staff-alerts";
 import { getCurrentShift } from "@/lib/shifts/current-shift";
+import { formatOrderDisplayNumber } from "@/lib/shifts/shift-rules";
 import { z } from "zod";
 
 const submitOrderSchema = z.object({
@@ -92,7 +97,7 @@ export async function submitOrder(formData: FormData) {
   const tax = 0; // MVP: no tax
   const total = subtotal + tax;
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const shift = await tx.shift.findFirst({
       where: { status: "OPEN" },
       select: { id: true },
@@ -154,9 +159,47 @@ export async function submitOrder(formData: FormData) {
 
     return {
       success: true,
-      data: { orderId: order.id, orderNumber: order.orderNumber },
+      data: {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        shiftOrderNumber,
+      },
     };
   });
+
+  if (result.success && result.data) {
+    await notifyNewStaffOrder({
+      order: {
+        orderId: result.data.orderId,
+        displayNumber: formatOrderDisplayNumber({
+          shiftOrderNumber: result.data.shiftOrderNumber,
+          orderNumber: result.data.orderNumber,
+        }),
+        tableCode,
+        customerName,
+        total,
+        itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
+      },
+      loadSubscriptions: () =>
+        prisma.staffPushSubscription.findMany({
+          where: { enabled: true },
+          select: { endpoint: true, p256dh: true, auth: true },
+        }),
+      notifySubscriptions: ({ subscriptions, payload }) =>
+        notifyStaffSubscriptions({
+          subscriptions,
+          payload,
+          onExpired: async (subscription) => {
+            await prisma.staffPushSubscription.update({
+              where: { endpoint: subscription.endpoint },
+              data: { enabled: false },
+            });
+          },
+        }),
+    });
+  }
+
+  return result;
 }
 
 export async function updateOrderStatus(

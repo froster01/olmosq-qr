@@ -17,14 +17,16 @@ model Table {
 }
 
 model Category {
-  id         String   @id @default(cuid())
-  loyverseId String   @unique
-  name       String
-  imageUrl   String?
-  sortOrder  Int      @default(0)
-  items      Item[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id              String   @id @default(cuid())
+  loyverseId      String   @unique
+  name            String
+  imageUrl        String?
+  sortOrder       Int      @default(0)
+  asksTemperature Boolean  @default(false)
+  isVisibleInMenu Boolean  @default(true)
+  items           Item[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Item {
@@ -186,6 +188,19 @@ model LoyverseSyncLog {
   createdAt    DateTime @default(now())
 
   @@index([orderId])
+}
+
+model StaffPushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([enabled])
 }
 
 enum OrderStatus {

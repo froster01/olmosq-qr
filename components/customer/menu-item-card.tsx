@@ -8,6 +8,7 @@ import type { Item, Variant, ItemModifier } from "@prisma/client";
 type ItemWithRelations = Item & {
   variants: Variant[];
   modifiers: ItemModifier[];
+  asksTemperature: boolean;
 };
 
 interface MenuItemCardProps {

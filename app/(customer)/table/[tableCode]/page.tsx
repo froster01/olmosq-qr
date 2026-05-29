@@ -5,6 +5,7 @@ import { OrderingPageClient } from "./ordering-client";
 import { BrandMark } from "@/components/brand-mark";
 import { Card, CardContent } from "@/components/ui/card";
 import { Clock } from "lucide-react";
+import { shouldShowCategoryInCustomerMenu } from "@/lib/menu/category-visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,7 @@ export default async function TableOrderingPage({ params }: PageProps) {
 
   // Filter out categories with no available items
   const filteredCategories = categories.filter(
-    (cat) => cat.items.length > 0
+    (cat) => shouldShowCategoryInCustomerMenu(cat) && cat.items.length > 0
   );
 
   return (

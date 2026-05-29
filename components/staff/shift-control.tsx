@@ -34,7 +34,13 @@ function formatOpenTime(openedAt: string): string {
   }).format(new Date(openedAt));
 }
 
-export function ShiftControl({ shift }: { shift: HeaderShift }) {
+export function ShiftControl({
+  shift,
+  variant = "header",
+}: {
+  shift: HeaderShift;
+  variant?: "header" | "page";
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [openDialog, setOpenDialog] = useState(false);
@@ -81,31 +87,39 @@ export function ShiftControl({ shift }: { shift: HeaderShift }) {
   return (
     <div
       className={cn(
-        "staff-shift-control ml-auto flex shrink-0 items-center gap-2 rounded-full border bg-card px-2 py-1 shadow-sm",
+        "staff-shift-control flex shrink-0 items-center gap-2 border bg-card shadow-sm",
+        variant === "header"
+          ? "ml-auto rounded-full px-2 py-1"
+          : "w-full rounded-xl px-3 py-2 sm:w-auto",
         !shift && "border-destructive/25 bg-destructive/5"
       )}
     >
-      <div className="staff-shift-meta hidden items-center gap-2 pl-2 text-xs font-semibold text-muted-foreground sm:flex">
-        {shift ? (
-          <>
-            <Clock className="h-3.5 w-3.5 text-primary" />
-            <span>
-              Shift {shift.shiftNumber} · {formatOpenTime(shift.openedAt)}
-            </span>
-          </>
-        ) : (
-          <>
-            <Lock className="h-3.5 w-3.5 text-destructive" />
-            <span>Shop Closed</span>
-          </>
-        )}
-      </div>
+      {variant === "header" && (
+        <div className="staff-shift-meta hidden items-center gap-2 pl-2 text-xs font-semibold text-muted-foreground sm:flex">
+          {shift ? (
+            <>
+              <Clock className="h-3.5 w-3.5 text-primary" />
+              <span>
+                Shift {shift.shiftNumber} · {formatOpenTime(shift.openedAt)}
+              </span>
+            </>
+          ) : (
+            <>
+              <Lock className="h-3.5 w-3.5 text-destructive" />
+              <span>Shop Closed</span>
+            </>
+          )}
+        </div>
+      )}
       <Button
         size="sm"
         variant={shift ? "outline" : "default"}
         disabled={pending}
         onClick={() => (shift ? setCloseDialog(true) : setOpenDialog(true))}
-        className="staff-shift-button h-9 rounded-full"
+        className={cn(
+          "staff-shift-button h-9",
+          variant === "header" ? "rounded-full" : "rounded-lg"
+        )}
       >
         {shift ? (
           <Lock className="h-4 w-4" />

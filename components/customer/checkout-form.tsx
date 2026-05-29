@@ -73,7 +73,7 @@ export function CheckoutForm({
             <Input
               id="customer-name"
               className="customer-checkout-input"
-              placeholder="e.g. Syafiq"
+              placeholder="eg. Ali"
               value={name}
               onChange={(e) => {
                 setName(e.target.value);

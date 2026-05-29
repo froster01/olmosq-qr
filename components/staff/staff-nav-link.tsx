@@ -2,14 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Banknote, ClipboardList, RefreshCw, QrCode } from "lucide-react";
+import {
+  Banknote,
+  ClipboardList,
+  QrCode,
+  Settings2,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/staff/orders", label: "Orders", icon: ClipboardList },
-  { href: "/staff/cash-drawer", label: "Cash Drawer", icon: Banknote },
-  { href: "/staff/menu-sync", label: "Menu Sync", icon: RefreshCw },
+  { href: "/staff/cash-drawer", label: "Shift", icon: Banknote },
+  { href: "/staff/menu-settings", label: "Menu", icon: Settings2 },
   { href: "/staff/tables", label: "Tables & QR", icon: QrCode },
 ];
 

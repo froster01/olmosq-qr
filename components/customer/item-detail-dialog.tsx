@@ -18,6 +18,7 @@ import { Coffee, Minus, Plus, Snowflake } from "lucide-react";
 type ItemWithRelations = Item & {
   variants: Variant[];
   modifiers: ItemModifier[];
+  asksTemperature: boolean;
 };
 
 interface ItemDetailDialogProps {
@@ -57,7 +58,7 @@ export function ItemDetailDialog({
       modifierNames: [],
       notes: notes || undefined,
       unitPrice,
-      temperature,
+      temperature: item.asksTemperature ? temperature : undefined,
     });
 
     // Reset
@@ -100,62 +101,68 @@ export function ItemDetailDialog({
             )}
           </DialogHeader>
 
-          <section className="customer-temperature-card space-y-2">
-            <div className="flex items-center justify-between gap-3">
-              <label className="customer-temperature-label font-heading text-sm font-semibold text-foreground">
-                Temperature
-              </label>
-              <span className="customer-temperature-hint">Choose one</span>
-            </div>
-            <div
-              aria-label="Temperature"
-              role="radiogroup"
-              className="customer-temperature-selector grid grid-cols-2 gap-1 rounded-full p-1"
-            >
-              <label className="relative cursor-pointer touch-manipulation">
-                <input
-                  type="radio"
-                  name="temperature"
-                  value="hot"
-                  checked={temperature === "hot"}
-                  onChange={(e) => setTemperature(e.target.value as Temperature)}
-                  className="sr-only"
-                />
-                <div
-                  className={cn(
-                    "customer-temperature-button flex items-center justify-center gap-2 rounded-full border px-3 font-semibold transition-all duration-200",
-                    temperature === "hot"
-                      ? "border-primary bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(80,101,47,0.18)]"
-                      : "border-transparent bg-transparent text-foreground/75 hover:bg-card"
-                  )}
-                >
-                  <Coffee className="size-4" aria-hidden="true" />
-                  <span>Hot</span>
-                </div>
-              </label>
-              <label className="relative cursor-pointer touch-manipulation">
-                <input
-                  type="radio"
-                  name="temperature"
-                  value="cold"
-                  checked={temperature === "cold"}
-                  onChange={(e) => setTemperature(e.target.value as Temperature)}
-                  className="sr-only"
-                />
-                <div
-                  className={cn(
-                    "customer-temperature-button flex items-center justify-center gap-2 rounded-full border px-3 font-semibold transition-all duration-200",
-                    temperature === "cold"
-                      ? "border-primary bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(80,101,47,0.18)]"
-                      : "border-transparent bg-transparent text-foreground/75 hover:bg-card"
-                  )}
-                >
-                  <Snowflake className="size-4" aria-hidden="true" />
-                  <span>Cold</span>
-                </div>
-              </label>
-            </div>
-          </section>
+          {item.asksTemperature && (
+            <section className="customer-temperature-card space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <label className="customer-temperature-label font-heading text-sm font-semibold text-foreground">
+                  Temperature
+                </label>
+                <span className="customer-temperature-hint">Choose one</span>
+              </div>
+              <div
+                aria-label="Temperature"
+                role="radiogroup"
+                className="customer-temperature-selector grid grid-cols-2 gap-1 rounded-full p-1"
+              >
+                <label className="relative cursor-pointer touch-manipulation">
+                  <input
+                    type="radio"
+                    name="temperature"
+                    value="hot"
+                    checked={temperature === "hot"}
+                    onChange={(e) =>
+                      setTemperature(e.target.value as Temperature)
+                    }
+                    className="sr-only"
+                  />
+                  <div
+                    className={cn(
+                      "customer-temperature-button flex items-center justify-center gap-2 rounded-full border px-3 font-semibold transition-all duration-200",
+                      temperature === "hot"
+                        ? "border-primary bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(80,101,47,0.18)]"
+                        : "border-transparent bg-transparent text-foreground/75 hover:bg-card"
+                    )}
+                  >
+                    <Coffee className="size-4" aria-hidden="true" />
+                    <span>Hot</span>
+                  </div>
+                </label>
+                <label className="relative cursor-pointer touch-manipulation">
+                  <input
+                    type="radio"
+                    name="temperature"
+                    value="cold"
+                    checked={temperature === "cold"}
+                    onChange={(e) =>
+                      setTemperature(e.target.value as Temperature)
+                    }
+                    className="sr-only"
+                  />
+                  <div
+                    className={cn(
+                      "customer-temperature-button flex items-center justify-center gap-2 rounded-full border px-3 font-semibold transition-all duration-200",
+                      temperature === "cold"
+                        ? "border-primary bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(80,101,47,0.18)]"
+                        : "border-transparent bg-transparent text-foreground/75 hover:bg-card"
+                    )}
+                  >
+                    <Snowflake className="size-4" aria-hidden="true" />
+                    <span>Cold</span>
+                  </div>
+                </label>
+              </div>
+            </section>
+          )}
 
           <section className="customer-request-card">
             <div className="flex items-center justify-between gap-3">

@@ -6,10 +6,15 @@ import { MenuItemCard } from "./menu-item-card";
 import { ItemDetailDialog } from "./item-detail-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Item, Variant, ItemModifier, Category } from "@prisma/client";
+import { shouldAskTemperatureForCategory } from "@/lib/menu/category-temperature";
 
 type ItemWithRelations = Item & {
   variants: Variant[];
   modifiers: ItemModifier[];
+};
+
+type ItemWithTemperature = ItemWithRelations & {
+  asksTemperature: boolean;
 };
 
 type CategoryWithItems = Category & {
@@ -22,12 +27,12 @@ interface MenuBrowserProps {
 }
 
 export function MenuBrowser({ categories, loading }: MenuBrowserProps) {
-  const [selectedItem, setSelectedItem] = useState<ItemWithRelations | null>(
+  const [selectedItem, setSelectedItem] = useState<ItemWithTemperature | null>(
     null
   );
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  function handleSelectItem(item: ItemWithRelations) {
+  function handleSelectItem(item: ItemWithTemperature) {
     setSelectedItem(item);
     setDialogOpen(true);
   }
@@ -84,7 +89,10 @@ export function MenuBrowser({ categories, loading }: MenuBrowserProps) {
                 .map((item) => (
                   <MenuItemCard
                     key={item.id}
-                    item={item}
+                    item={{
+                      ...item,
+                      asksTemperature: shouldAskTemperatureForCategory(cat),
+                    }}
                     onSelect={handleSelectItem}
                   />
                 ))}

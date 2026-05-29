@@ -1,0 +1,136 @@
+services:
+  reverse-proxy:
+    image: caddy:2.8-alpine
+    container_name: olmosq-reverse-proxy
+    restart: unless-stopped
+    depends_on:
+      app-prod:
+        condition: service_started
+      app-staging:
+        condition: service_started
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      PROD_DOMAIN: ${PROD_DOMAIN}
+      STAGING_DOMAIN: ${STAGING_DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - olmosq-public
+
+  app-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_BASE_URL: https://${PROD_DOMAIN}
+    image: olmosq-qr:prod
+    container_name: olmosq-app-prod
+    restart: unless-stopped
+    depends_on:
+      postgres-prod:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      DATABASE_URL: postgresql://${PROD_POSTGRES_USER}:${PROD_POSTGRES_PASSWORD}@postgres-prod:5432/${PROD_POSTGRES_DB}?schema=public
+      DIRECT_URL: postgresql://${PROD_POSTGRES_USER}:${PROD_POSTGRES_PASSWORD}@postgres-prod:5432/${PROD_POSTGRES_DB}?schema=public
+      LOYVERSE_ACCESS_TOKEN: ${PROD_LOYVERSE_ACCESS_TOKEN}
+      LOYVERSE_STORE_ID: ${PROD_LOYVERSE_STORE_ID}
+      NEXT_PUBLIC_BASE_URL: https://${PROD_DOMAIN}
+      NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY: ${PROD_NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY}
+      WEB_PUSH_VAPID_PRIVATE_KEY: ${PROD_WEB_PUSH_VAPID_PRIVATE_KEY}
+      WEB_PUSH_CONTACT_EMAIL: ${PROD_WEB_PUSH_CONTACT_EMAIL}
+    mem_limit: 1536m
+    cpus: 1.5
+    networks:
+      - olmosq-public
+      - olmosq-prod
+
+  app-staging:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_BASE_URL: https://${STAGING_DOMAIN}
+    image: olmosq-qr:staging
+    container_name: olmosq-app-staging
+    restart: unless-stopped
+    depends_on:
+      postgres-staging:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      DATABASE_URL: postgresql://${STAGING_POSTGRES_USER}:${STAGING_POSTGRES_PASSWORD}@postgres-staging:5432/${STAGING_POSTGRES_DB}?schema=public
+      DIRECT_URL: postgresql://${STAGING_POSTGRES_USER}:${STAGING_POSTGRES_PASSWORD}@postgres-staging:5432/${STAGING_POSTGRES_DB}?schema=public
+      LOYVERSE_ACCESS_TOKEN: ${STAGING_LOYVERSE_ACCESS_TOKEN}
+      LOYVERSE_STORE_ID: ${STAGING_LOYVERSE_STORE_ID}
+      NEXT_PUBLIC_BASE_URL: https://${STAGING_DOMAIN}
+      NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY: ${STAGING_NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY}
+      WEB_PUSH_VAPID_PRIVATE_KEY: ${STAGING_WEB_PUSH_VAPID_PRIVATE_KEY}
+      WEB_PUSH_CONTACT_EMAIL: ${STAGING_WEB_PUSH_CONTACT_EMAIL}
+    mem_limit: 1024m
+    cpus: 1.0
+    networks:
+      - olmosq-public
+      - olmosq-staging
+
+  postgres-prod:
+    image: postgres:16-alpine
+    container_name: olmosq-postgres-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PROD_POSTGRES_DB}
+      POSTGRES_USER: ${PROD_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${PROD_POSTGRES_PASSWORD}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    mem_limit: 1536m
+    cpus: 1.0
+    networks:
+      - olmosq-prod
+
+  postgres-staging:
+    image: postgres:16-alpine
+    container_name: olmosq-postgres-staging
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${STAGING_POSTGRES_DB}
+      POSTGRES_USER: ${STAGING_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${STAGING_POSTGRES_PASSWORD}
+    volumes:
+      - postgres_staging_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    mem_limit: 768m
+    cpus: 0.5
+    networks:
+      - olmosq-staging
+
+networks:
+  olmosq-public:
+  olmosq-prod:
+    internal: true
+  olmosq-staging:
+    internal: true
+
+volumes:
+  caddy_data:
+  caddy_config:
+  postgres_prod_data:
+  postgres_staging_data:

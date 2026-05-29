@@ -1,0 +1,13 @@
+{
+	email {$ACME_EMAIL}
+}
+
+{$PROD_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app-prod:3000
+}
+
+{$STAGING_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app-staging:3000
+}

@@ -1,0 +1,43 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches:
+      - staging
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test before deploy
+    uses: ./.github/workflows/test.yml
+
+  deploy:
+    name: Deploy staging
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/staging'
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          fingerprint: ${{ secrets.VPS_SSH_FINGERPRINT }}
+          script_stop: true
+          script: |
+            set -eu
+            cd "${{ secrets.VPS_APP_DIR }}"
+            scripts/vps-deploy.sh staging "${{ github.sha }}"

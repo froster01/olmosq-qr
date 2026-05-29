@@ -1,0 +1,60 @@
+services:
+  app-local:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: deps
+    container_name: olmosq-app-local
+    restart: unless-stopped
+    depends_on:
+      postgres-local:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      DATABASE_URL: postgresql://${LOCAL_POSTGRES_USER}:${LOCAL_POSTGRES_PASSWORD}@postgres-local:5432/${LOCAL_POSTGRES_DB}?schema=public
+      DIRECT_URL: postgresql://${LOCAL_POSTGRES_USER}:${LOCAL_POSTGRES_PASSWORD}@postgres-local:5432/${LOCAL_POSTGRES_DB}?schema=public
+      LOYVERSE_ACCESS_TOKEN: ${LOYVERSE_ACCESS_TOKEN}
+      LOYVERSE_STORE_ID: ${LOYVERSE_STORE_ID}
+      NEXT_PUBLIC_BASE_URL: http://localhost:3000
+      NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY}
+      WEB_PUSH_VAPID_PRIVATE_KEY: ${WEB_PUSH_VAPID_PRIVATE_KEY}
+      WEB_PUSH_CONTACT_EMAIL: ${WEB_PUSH_CONTACT_EMAIL}
+    command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run dev -- --hostname 0.0.0.0"
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - app_local_node_modules:/app/node_modules
+      - app_local_next:/app/.next
+    networks:
+      - olmosq-local
+
+  postgres-local:
+    image: postgres:16-alpine
+    container_name: olmosq-postgres-local
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${LOCAL_POSTGRES_DB}
+      POSTGRES_USER: ${LOCAL_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${LOCAL_POSTGRES_PASSWORD}
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_local_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - olmosq-local
+
+networks:
+  olmosq-local:
+
+volumes:
+  app_local_node_modules:
+  app_local_next:
+  postgres_local_data:

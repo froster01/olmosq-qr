@@ -1,0 +1,46 @@
+name: Test
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
+      DIRECT_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
+      LOYVERSE_ACCESS_TOKEN: ci
+      LOYVERSE_STORE_ID: ci
+      NEXT_PUBLIC_BASE_URL: http://localhost:3000
+      NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY: ci
+      WEB_PUSH_VAPID_PRIVATE_KEY: ci
+      WEB_PUSH_CONTACT_EMAIL: staff@example.com
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Unit tests
+        run: npx tsx --test 'lib/**/*.test.ts'
+
+      - name: Build
+        run: npm run build

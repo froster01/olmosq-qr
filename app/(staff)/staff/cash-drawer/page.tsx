@@ -1,8 +1,6 @@
 import {
-  ArrowDownToLine,
-  ArrowUpFromLine,
   Banknote,
-  History,
+  ClipboardList,
   ReceiptText,
 } from "lucide-react";
 import Link from "next/link";
@@ -114,49 +112,67 @@ export default async function CashDrawerPage() {
         expectedCash: cashSummary.expectedCash,
       }
     : null;
-  const closedShifts = await prisma.shift.findMany({
+  const closedShiftCount = await prisma.shift.count({
     where: { status: "CLOSED" },
-    include: {
-      orders: {
-        include: { paymentType: true },
-      },
-      cashMovements: true,
-    },
-    orderBy: { closedAt: "desc" },
-    take: 8,
   });
 
   return (
-    <div className="staff-page staff-cash-drawer-page space-y-5">
-      <div className="staff-page-header staff-cash-drawer-header">
+    <div className="staff-page staff-cash-drawer-page space-y-4">
+      <div className="staff-page-header staff-cash-drawer-header flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
           <h1 className="staff-page-title font-heading text-4xl font-bold">
             Shift
           </h1>
           <p className="staff-page-subtitle text-muted-foreground">
-            Open and close the shift, track drawer cash, and review cash reports.
+            Open the shift, track drawer cash, and keep the counter ready.
           </p>
         </div>
       </div>
 
-      <Card className="staff-shift-page-control-card">
-        <CardContent className="staff-shift-page-control-content flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0 space-y-1">
-            <p className="text-xs font-bold uppercase text-muted-foreground">
-              {currentShift ? "Open shift" : "Shift closed"}
-            </p>
-            <p className="font-heading text-xl font-bold">
-              {currentShift ? `Shift ${currentShift.shiftNumber}` : "No open shift"}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {currentShift
-                ? `Opened ${formatDateTime(currentShift.openedAt)}`
-                : "Open a shift before taking orders or recording drawer cash."}
-            </p>
-          </div>
-          <ShiftControl shift={pageShift} variant="page" />
-        </CardContent>
-      </Card>
+      <div className="staff-shift-focus-grid grid gap-3">
+        <Card className="staff-shift-page-control-card">
+          <CardContent className="staff-shift-page-control-content flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0 space-y-1">
+              <p className="text-xs font-bold uppercase text-muted-foreground">
+                {currentShift ? "Shift open" : "Shift closed"}
+              </p>
+              <p className="font-heading text-xl font-bold leading-tight">
+                {currentShift
+                  ? `Shift ${currentShift.shiftNumber}`
+                  : "No open shift"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {currentShift
+                  ? `Opened ${formatDateTime(currentShift.openedAt)}`
+                  : "Open before taking orders or recording drawer cash."}
+              </p>
+            </div>
+            <ShiftControl shift={pageShift} variant="page" />
+          </CardContent>
+        </Card>
+
+        <Card className="staff-shift-report-card">
+          <CardContent className="staff-shift-report-content flex h-full flex-col justify-between gap-3 p-3 sm:flex-row sm:items-center">
+            <div className="min-w-0 space-y-1">
+              <p className="text-xs font-bold uppercase text-muted-foreground">
+                Shift reports
+              </p>
+              <p className="font-heading text-lg font-bold leading-tight">
+                {closedShiftCount} closed {closedShiftCount === 1 ? "shift" : "shifts"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Movement history and closed totals.
+              </p>
+            </div>
+            <Link href="/staff/shift-reports">
+              <Button className="w-full sm:w-auto" size="sm" variant="outline">
+                <ClipboardList className="h-4 w-4" />
+                Review
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="staff-cash-summary-grid grid gap-3">
         <CashMetricCard
@@ -272,125 +288,27 @@ export default async function CashDrawerPage() {
           </Card>
 
           <Card className="staff-cash-movements-card">
-            <CardHeader className="staff-cash-card-header">
-              <CardTitle className="flex items-center gap-2">
-                <History className="h-5 w-5 text-primary" />
-                Movement History
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="staff-cash-movements-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain">
-              {localCashMovements.length === 0 ? (
-                <div className="staff-cash-empty-state rounded-xl border border-dashed bg-muted/25 p-4 text-sm text-muted-foreground">
-                  {currentShift
-                    ? "No manual cash movements recorded for this open shift."
-                    : "Open a shift to start recording drawer movements."}
+            <CardContent className="space-y-3 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-xs font-bold uppercase text-muted-foreground">
+                    Movement history
+                  </p>
+                  <p className="font-heading text-lg font-bold">
+                    {localCashMovements.length} current-shift{" "}
+                    {localCashMovements.length === 1 ? "entry" : "entries"}
+                  </p>
                 </div>
-              ) : (
-                localCashMovements.map((movement) => (
-                  <div
-                    key={movement.id}
-                    className="staff-cash-movement-row rounded-xl border bg-card p-3 text-sm"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-2 font-semibold">
-                        {movement.type === "CASH_IN" ? (
-                          <ArrowDownToLine className="h-4 w-4 text-primary" />
-                        ) : (
-                          <ArrowUpFromLine className="h-4 w-4 text-destructive" />
-                        )}
-                        {movement.type === "CASH_IN" ? "Cash In" : "Cash Out"}
-                      </div>
-                      <p className="font-heading font-bold text-primary">
-                        {formatReceiptMoney(movement.amount)}
-                      </p>
-                    </div>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      {formatDateTime(movement.createdAt)}
-                    </p>
-                    {movement.note && (
-                      <p className="mt-2 rounded-lg bg-muted/35 p-2">
-                        {movement.note}
-                      </p>
-                    )}
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="staff-closed-shifts-card">
-            <CardHeader className="staff-cash-card-header">
-              <CardTitle className="flex items-center gap-2">
                 <Banknote className="h-5 w-5 text-primary" />
-                Closed Shifts
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="staff-closed-shifts-scroll min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain">
-              {closedShifts.length === 0 ? (
-                <div className="staff-cash-empty-state rounded-xl border border-dashed bg-muted/25 p-4 text-sm text-muted-foreground">
-                  Closed shift reports will appear here after the first shift is
-                  closed.
-                </div>
-              ) : (
-                closedShifts.map((shift) => {
-                  const totals = calculateCashDrawerTotals({
-                    startingCash: Number(shift.startingCash),
-                    orders: shift.orders.map((order) => ({
-                      status: order.status,
-                      total: Number(order.total),
-                      cashReceived:
-                        order.cashReceived === null
-                          ? null
-                          : Number(order.cashReceived),
-                      cashChange:
-                        order.cashChange === null
-                          ? null
-                          : Number(order.cashChange),
-                      paymentType: order.paymentType,
-                    })),
-                    movements: shift.cashMovements.map((movement) => ({
-                      type: movement.type,
-                      amount: Number(movement.amount),
-                    })),
-                  });
-
-                  return (
-                    <div
-                      key={shift.id}
-                      className="staff-closed-shift-row rounded-xl border bg-card p-3 text-sm"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-heading text-lg font-bold">
-                            Shift {shift.shiftNumber}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatDateTime(shift.openedAt)} -{" "}
-                            {formatDateTime(shift.closedAt)}
-                          </p>
-                        </div>
-                        <p className="font-heading font-bold text-primary">
-                          {formatReceiptMoney(
-                            shift.actualCash === null
-                              ? totals.expectedCash
-                              : Number(shift.actualCash)
-                          )}
-                        </p>
-                      </div>
-                      <div className="mt-3 flex items-center justify-between gap-3">
-                        <span className="text-muted-foreground">
-                          {shift.orders.length} orders
-                        </span>
-                        <Link href={`/staff/shift-reports/${shift.id}`}>
-                          <Button size="sm" variant="outline">
-                            View Report
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Review drawer movement history from the shift reports page.
+              </p>
+              <Link href="/staff/shift-reports">
+                <Button className="w-full" variant="outline">
+                  View History
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </aside>

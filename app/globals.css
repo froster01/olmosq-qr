@@ -197,6 +197,7 @@
 .staff-shift-page-control-card .staff-shift-control {
   background: transparent;
   box-shadow: none;
+  padding-block: 0.2rem;
 }
 
 .staff-shift-page-control-content > * {
@@ -2501,6 +2502,87 @@
   .staff-qr-image {
     width: 7.5rem;
     height: 7.5rem;
+  }
+}
+
+.staff-shift-focus-grid,
+.staff-shift-reports-layout,
+.staff-current-shift-summary,
+.staff-current-movements-list,
+.staff-closed-shifts-report-list {
+  min-width: 0;
+}
+
+.staff-shift-focus-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
+  align-items: stretch;
+}
+
+.staff-shift-report-card {
+  background: color-mix(in oklch, var(--card) 94%, var(--accent));
+}
+
+.staff-shift-report-content > * {
+  min-width: 0;
+}
+
+.staff-cash-summary-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+}
+
+.staff-cash-metric-primary {
+  grid-column: auto;
+}
+
+.staff-cash-drawer-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 22rem);
+}
+
+.staff-cash-movement-form-card,
+.staff-cash-movements-card {
+  overflow: hidden;
+}
+
+.staff-cash-orders-scroll {
+  max-height: calc(100dvh - 24rem);
+}
+
+.staff-shift-reports-layout {
+  grid-template-columns: minmax(0, 0.95fr) minmax(22rem, 1.05fr);
+  align-items: start;
+}
+
+.staff-current-shift-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.staff-current-movements-list,
+.staff-closed-shifts-report-list {
+  max-height: calc(100dvh - 17rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.55rem;
+}
+
+@media (max-width: 1100px) {
+  .staff-shift-focus-grid,
+  .staff-cash-drawer-layout,
+  .staff-shift-reports-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .staff-cash-orders-scroll,
+  .staff-current-movements-list,
+  .staff-closed-shifts-report-list {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .staff-current-shift-summary {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

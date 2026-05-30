@@ -22,9 +22,16 @@ else
   WORKER_SERVICE="worker-staging"
 fi
 
+echo "Deploying $ENVIRONMENT with app service $APP_SERVICE and worker service $WORKER_SERVICE"
+
 git fetch origin "$GIT_REF"
 git checkout --detach FETCH_HEAD
+
+docker compose --env-file .env.vps -f compose.vps.yml config --services | grep -x "$APP_SERVICE" >/dev/null
+docker compose --env-file .env.vps -f compose.vps.yml config --services | grep -x "$WORKER_SERVICE" >/dev/null
 
 docker compose --env-file .env.vps -f compose.vps.yml build "$APP_SERVICE" "$WORKER_SERVICE"
 scripts/vps-migrate.sh "$ENVIRONMENT"
 docker compose --env-file .env.vps -f compose.vps.yml up -d "$APP_SERVICE" "$WORKER_SERVICE" reverse-proxy
+docker compose --env-file .env.vps -f compose.vps.yml ps "$APP_SERVICE" "$WORKER_SERVICE"
+docker compose --env-file .env.vps -f compose.vps.yml ps --status running "$WORKER_SERVICE" | grep "$WORKER_SERVICE" >/dev/null

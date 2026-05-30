@@ -13,6 +13,7 @@ services:
       - "443:443"
       - "443:443/udp"
     environment:
+      ACME_EMAIL: ${ACME_EMAIL}
       PROD_DOMAIN: ${PROD_DOMAIN}
       STAGING_DOMAIN: ${STAGING_DOMAIN}
     volumes:

@@ -9,7 +9,6 @@ import { getStaffStatusActions } from "@/lib/orders/status-flow";
 import { formatOrderDisplayNumber } from "@/lib/shifts/shift-rules";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import type { OrderStatus } from "@prisma/client";
 
 interface OrderCardProps {
   id: string;
@@ -17,7 +16,7 @@ interface OrderCardProps {
   shiftOrderNumber: number | null;
   tableCode: string;
   customerName: string;
-  status: OrderStatus;
+  status: string;
   total: number;
   itemCount: number;
   createdAt: string;
@@ -36,10 +35,7 @@ export function OrderCard({
 }: OrderCardProps) {
   const actions = getStaffStatusActions(status);
   const router = useRouter();
-  const createdTime = new Date(createdAt).toLocaleTimeString([], {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  const createdTime = formatStaffTime(createdAt);
   const displayNumber = formatOrderDisplayNumber({
     shiftOrderNumber,
     orderNumber,
@@ -115,4 +111,12 @@ export function OrderCard({
       </CardContent>
     </Card>
   );
+}
+
+function formatStaffTime(value: string) {
+  return new Intl.DateTimeFormat("en-MY", {
+    timeZone: "Asia/Kuala_Lumpur",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
 }

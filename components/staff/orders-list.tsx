@@ -1,6 +1,5 @@
 "use client";
 
-import type { OrderStatus } from "@prisma/client";
 import { OrderCard } from "./order-card";
 
 interface OrderData {
@@ -9,7 +8,7 @@ interface OrderData {
   shiftOrderNumber: number | null;
   tableCode: string;
   customerName: string;
-  status: OrderStatus;
+  status: string;
   total: number;
   itemCount: number;
   createdAt: string;

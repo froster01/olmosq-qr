@@ -1,5 +1,4 @@
-import { prisma } from "@/lib/db";
-import { getCustomerTrackingState } from "@/lib/orders/customer-tracking";
+import { getCustomerOrderStatus } from "@/lib/orders/order-realtime-data";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -10,23 +9,11 @@ export async function GET(
 ) {
   const { orderId } = await params;
 
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
-    select: {
-      id: true,
-      status: true,
-      updatedAt: true,
-    },
-  });
+  const order = await getCustomerOrderStatus(orderId);
 
   if (!order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
 
-  return NextResponse.json({
-    orderId: order.id,
-    status: order.status,
-    updatedAt: order.updatedAt.toISOString(),
-    tracking: getCustomerTrackingState(order.status),
-  });
+  return NextResponse.json(order);
 }

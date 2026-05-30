@@ -9,6 +9,7 @@ import {
   getReceiptSyncFailedOrderStatus,
 } from "@/lib/orders/status-flow";
 import { validateCashPayment } from "@/lib/payments/cash-drawer";
+import { enqueueOrderUpdatedEvent } from "@/lib/realtime/order-queues";
 import { getCurrentShift } from "@/lib/shifts/current-shift";
 
 export async function syncMenuAction() {
@@ -74,6 +75,7 @@ export async function createReceiptAction(
       where: { id: orderId },
       data: { status: "PAID_SYNCING" },
     });
+    await enqueueOrderUpdate(orderId);
 
     const { receiptNumber } = await createLoyverseReceipt(
       orderId,
@@ -93,6 +95,7 @@ export async function createReceiptAction(
         loyverseSyncError: null,
       },
     });
+    await enqueueOrderUpdate(orderId);
 
     await prisma.loyverseSyncLog.create({
       data: {
@@ -121,6 +124,7 @@ export async function createReceiptAction(
         cashChange: cashPayment.cashChange,
       },
     });
+    await enqueueOrderUpdate(orderId);
 
     await prisma.loyverseSyncLog.create({
       data: {
@@ -132,6 +136,14 @@ export async function createReceiptAction(
     });
 
     return { success: false, error: message };
+  }
+}
+
+async function enqueueOrderUpdate(orderId: string) {
+  try {
+    await enqueueOrderUpdatedEvent(orderId);
+  } catch (error) {
+    console.error("Failed to enqueue order update", error);
   }
 }
 

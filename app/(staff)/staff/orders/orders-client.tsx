@@ -3,9 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { OrdersList } from "@/components/staff/orders-list";
-import { RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import type { OrderStatus } from "@prisma/client";
+import { buildOrderWebSocketUrl } from "@/lib/realtime/order-websocket-client";
+import type { OrderRealtimeEvent } from "@/lib/realtime/order-events";
 
 interface OrderData {
   id: string;
@@ -13,7 +12,7 @@ interface OrderData {
   shiftOrderNumber: number | null;
   tableCode: string;
   customerName: string;
-  status: OrderStatus;
+  status: string;
   total: number;
   itemCount: number;
   createdAt: string;
@@ -38,10 +37,9 @@ export function OrdersPageClient({
 }) {
   const [orders, setOrders] = useState<OrderData[]>(initialOrders);
   const [activeTab, setActiveTab] = useState("ALL");
-  const [refreshing, setRefreshing] = useState(false);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
 
   const refresh = useCallback(async () => {
-    setRefreshing(true);
     try {
       const res = await fetch("/staff/orders/api");
       if (res.ok) {
@@ -50,16 +48,71 @@ export function OrdersPageClient({
       }
     } catch {
       // Silent fail on refresh
-    } finally {
-      setRefreshing(false);
     }
   }, []);
 
-  // Auto-refresh every 15 seconds
   useEffect(() => {
+    let isMounted = true;
+    let socket: WebSocket | null = null;
+
+    const connectTimer = window.setTimeout(() => {
+      if (!isMounted) {
+        return;
+      }
+
+      socket = new WebSocket(buildOrderWebSocketUrl({ scope: "staff" }));
+
+      socket.onopen = () => {
+        if (!isMounted) {
+          return;
+        }
+
+        setIsSocketConnected(true);
+        void refresh();
+      };
+
+      socket.onmessage = (message) => {
+        try {
+          const event = JSON.parse(message.data) as {
+            staffOrder?: OrderRealtimeEvent["staffOrder"];
+          };
+          if (!event.staffOrder) {
+            return;
+          }
+
+          const staffOrder = event.staffOrder;
+          setOrders((current) => sortOrders(upsertOrder(current, staffOrder)));
+        } catch {
+          setIsSocketConnected(false);
+        }
+      };
+
+      socket.onerror = () => {
+        socket?.close();
+      };
+
+      socket.onclose = () => {
+        if (isMounted) {
+          setIsSocketConnected(false);
+        }
+      };
+    }, 0);
+
+    return () => {
+      isMounted = false;
+      window.clearTimeout(connectTimer);
+      socket?.close();
+    };
+  }, [refresh]);
+
+  useEffect(() => {
+    if (isSocketConnected) {
+      return;
+    }
+
     const interval = setInterval(refresh, 15000);
     return () => clearInterval(interval);
-  }, [refresh]);
+  }, [isSocketConnected, refresh]);
 
   const filtered =
     activeTab === "ALL"
@@ -68,7 +121,7 @@ export function OrdersPageClient({
 
   return (
     <div className="staff-page space-y-6">
-      <div className="staff-page-header flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div className="staff-page-header space-y-1">
         <div className="space-y-1">
           <h1 className="staff-page-title font-heading text-3xl font-bold">
             Orders
@@ -79,15 +132,6 @@ export function OrdersPageClient({
               : "Open a shift from the header to start taking orders."}
           </p>
         </div>
-        <Button
-          variant="outline"
-          onClick={refresh}
-          disabled={refreshing}
-          className="staff-refresh-button"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-          Refresh Feed
-        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -111,4 +155,21 @@ export function OrdersPageClient({
       </Tabs>
     </div>
   );
+}
+
+function upsertOrder(orders: OrderData[], order: OrderData) {
+  const index = orders.findIndex((current) => current.id === order.id);
+  if (index === -1) {
+    return [order, ...orders];
+  }
+
+  return orders.map((current) => (current.id === order.id ? order : current));
+}
+
+function sortOrders(orders: OrderData[]) {
+  return [...orders].sort((a, b) => {
+    const aNumber = a.shiftOrderNumber ?? a.orderNumber;
+    const bNumber = b.shiftOrderNumber ?? b.orderNumber;
+    return bNumber - aNumber;
+  });
 }

@@ -28,24 +28,6 @@ async function main() {
       isActive: true,
     },
   });
-
-  console.log("Seeding tables...");
-
-  for (let i = 1; i <= 10; i++) {
-    const code = `T${i}`;
-    await prisma.table.upsert({
-      where: { code },
-      update: {},
-      create: {
-        code,
-        number: i,
-        name: i <= 5 ? `Table ${i}` : `Table ${i} (Outdoor)`,
-        isActive: true,
-      },
-    });
-  }
-
-  console.log("Seeded 10 tables (T1-T10)");
 }
 
 main()

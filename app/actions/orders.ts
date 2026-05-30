@@ -7,11 +7,11 @@ import {
   hasAllRequestedItems,
 } from "@/lib/orders/submit-order-validation";
 import {
-  notifyNewStaffOrder,
-  notifyStaffSubscriptions,
-} from "@/lib/push/staff-alerts";
+  enqueueOrderCreatedEvent,
+  enqueueOrderUpdatedEvent,
+  enqueueStaffOrderCreatedNotification,
+} from "@/lib/realtime/order-queues";
 import { getCurrentShift } from "@/lib/shifts/current-shift";
-import { formatOrderDisplayNumber } from "@/lib/shifts/shift-rules";
 import { z } from "zod";
 
 const submitOrderSchema = z.object({
@@ -168,35 +168,7 @@ export async function submitOrder(formData: FormData) {
   });
 
   if (result.success && result.data) {
-    await notifyNewStaffOrder({
-      order: {
-        orderId: result.data.orderId,
-        displayNumber: formatOrderDisplayNumber({
-          shiftOrderNumber: result.data.shiftOrderNumber,
-          orderNumber: result.data.orderNumber,
-        }),
-        tableCode,
-        customerName,
-        total,
-        itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
-      },
-      loadSubscriptions: () =>
-        prisma.staffPushSubscription.findMany({
-          where: { enabled: true },
-          select: { endpoint: true, p256dh: true, auth: true },
-        }),
-      notifySubscriptions: ({ subscriptions, payload }) =>
-        notifyStaffSubscriptions({
-          subscriptions,
-          payload,
-          onExpired: async (subscription) => {
-            await prisma.staffPushSubscription.update({
-              where: { endpoint: subscription.endpoint },
-              data: { enabled: false },
-            });
-          },
-        }),
-    });
+    await enqueueOrderSideEffects(result.data.orderId, "created");
   }
 
   return result;
@@ -229,5 +201,26 @@ export async function updateOrderStatus(
     data: { status: parsedStatus.data },
   });
 
+  await enqueueOrderSideEffects(orderId, "updated");
+
   return { success: true };
+}
+
+async function enqueueOrderSideEffects(
+  orderId: string,
+  eventKind: "created" | "updated"
+) {
+  try {
+    if (eventKind === "created") {
+      await Promise.all([
+        enqueueOrderCreatedEvent(orderId),
+        enqueueStaffOrderCreatedNotification(orderId),
+      ]);
+      return;
+    }
+
+    await enqueueOrderUpdatedEvent(orderId);
+  } catch (error) {
+    console.error("Failed to enqueue order side effects", error);
+  }
 }

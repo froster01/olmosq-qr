@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Check, Copy, Download, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface QRCodeDisplayProps {
   tableCode: string;
@@ -39,9 +40,14 @@ export function QRCodeDisplay({
   }
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(orderingUrl);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1400);
+    try {
+      await navigator.clipboard.writeText(orderingUrl);
+      setCopied(true);
+      toast.success("Ordering link copied");
+      window.setTimeout(() => setCopied(false), 1400);
+    } catch {
+      toast.error("Could not copy ordering link");
+    }
   }
 
   return (

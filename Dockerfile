@@ -25,14 +25,20 @@ RUN apt-get update \
 
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev \
-  && npm install --no-save prisma@7.8.0 tsx@4.22.3 \
+  && npm install --no-save prisma@7.8.0 \
   && npm cache clean --force
 
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/app ./app
+COPY --from=builder /app/lib ./lib
+COPY --from=builder /app/server ./server
+COPY --from=builder /app/server.ts ./server.ts
+COPY --from=builder /app/worker.ts ./worker.ts
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/next.config.ts ./next.config.ts
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 

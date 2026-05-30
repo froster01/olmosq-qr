@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Clock3, RefreshCw } from "lucide-react";
 
 import {
@@ -8,6 +8,8 @@ import {
 } from "@/lib/orders/customer-tracking";
 import { StatusBadge } from "@/components/staff/status-badge";
 import { cn } from "@/lib/utils";
+import { buildOrderWebSocketUrl } from "@/lib/realtime/order-websocket-client";
+import type { OrderRealtimeEvent } from "@/lib/realtime/order-events";
 
 type OrderStatusResponse = {
   status: string;
@@ -26,57 +28,94 @@ export function OrderLiveTracker({
 }) {
   const [status, setStatus] = useState(initialStatus);
   const [updatedAt, setUpdatedAt] = useState(initialUpdatedAt);
-  const [lastCheckedAt, setLastCheckedAt] = useState(() => new Date());
+  const [lastCheckedAt, setLastCheckedAt] = useState(initialUpdatedAt);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasConnectionError, setHasConnectionError] = useState(false);
 
   const tracking = useMemo(() => getCustomerTrackingState(status), [status]);
 
-  useEffect(() => {
-    if (tracking.isFinal) {
-      return;
+  const refreshStatus = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const response = await fetch(`/api/orders/${orderId}/status`, {
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error("Could not refresh order status");
+      }
+
+      const data = (await response.json()) as OrderStatusResponse;
+
+      setStatus(data.status);
+      setUpdatedAt(data.updatedAt);
+      setLastCheckedAt(new Date().toISOString());
+      setHasConnectionError(false);
+    } catch {
+      setHasConnectionError(true);
+    } finally {
+      setIsRefreshing(false);
     }
+  }, [orderId]);
 
+  useEffect(() => {
     let isMounted = true;
+    let socket: WebSocket | null = null;
 
-    async function refreshStatus() {
-      setIsRefreshing(true);
-      try {
-        const response = await fetch(`/api/orders/${orderId}/status`, {
-          cache: "no-store",
-        });
+    const connectTimer = window.setTimeout(() => {
+      if (!isMounted) {
+        return;
+      }
 
-        if (!response.ok) {
-          throw new Error("Could not refresh order status");
-        }
+      socket = new WebSocket(
+        buildOrderWebSocketUrl({ scope: "customer", orderId })
+      );
 
-        const data = (await response.json()) as OrderStatusResponse;
-
+      socket.onopen = () => {
         if (!isMounted) {
           return;
         }
 
-        setStatus(data.status);
-        setUpdatedAt(data.updatedAt);
-        setLastCheckedAt(new Date());
-        setHasConnectionError(false);
-      } catch {
+        void refreshStatus();
+      };
+
+      socket.onmessage = (message) => {
+        try {
+          const event = JSON.parse(message.data) as {
+            kind?: string;
+            customerStatus?: OrderRealtimeEvent["customerStatus"];
+          };
+
+          if (!isMounted || event.kind === "connected" || !event.customerStatus) {
+            return;
+          }
+
+          setStatus(event.customerStatus.status);
+          setUpdatedAt(event.customerStatus.updatedAt);
+          setLastCheckedAt(new Date().toISOString());
+          setHasConnectionError(false);
+        } catch {
+          setHasConnectionError(true);
+        }
+      };
+
+      socket.onerror = () => {
+        socket?.close();
+      };
+
+      socket.onclose = () => {
         if (isMounted) {
           setHasConnectionError(true);
         }
-      } finally {
-        if (isMounted) {
-          setIsRefreshing(false);
-        }
-      }
-    }
+      };
+    }, 0);
 
-    const intervalId = window.setInterval(refreshStatus, 5000);
     return () => {
       isMounted = false;
-      window.clearInterval(intervalId);
+      window.clearTimeout(connectTimer);
+      socket?.close();
     };
-  }, [orderId, tracking.isFinal]);
+  }, [orderId, refreshStatus]);
 
   return (
     <section className="customer-confirmation-section">
@@ -129,7 +168,7 @@ export function OrderLiveTracker({
   );
 }
 
-function formatLiveTime(value: string | Date) {
+function formatLiveTime(value: string) {
   return new Intl.DateTimeFormat("en-MY", {
     timeZone: "Asia/Kuala_Lumpur",
     hour: "numeric",

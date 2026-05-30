@@ -14,13 +14,16 @@ Open [http://localhost:3000](http://localhost:3000) with your browser.
 This starts two local containers:
 
 - `olmosq-app-local`: Next.js dev server
+- `olmosq-worker-local`: BullMQ worker for realtime order events and staff alerts
 - `olmosq-postgres-local`: local PostgreSQL database
+- `olmosq-redis-local`: local Redis queue and pub/sub
 
 Inside Docker, the app uses:
 
 ```env
 DATABASE_URL="postgresql://olmosq_local:local_password@postgres-local:5432/olmosq_local?schema=public"
 DIRECT_URL="postgresql://olmosq_local:local_password@postgres-local:5432/olmosq_local?schema=public"
+REDIS_URL="redis://redis-local:6379"
 ```
 
 From your host machine, database tools can connect through port `5434`:

@@ -171,7 +171,7 @@ export function OrderDetailView({ order }: OrderDetailProps) {
           </div>
           <p className="staff-page-subtitle text-muted-foreground text-xs leading-snug truncate">
             Table {order.tableCode} &middot; {order.customerName} &middot;{" "}
-            {new Date(order.createdAt).toLocaleString()}
+            {formatStaffDateTime(order.createdAt)}
           </p>
         </div>
       </div>
@@ -434,7 +434,7 @@ function PrintableReceiptCard({
             <div className="flex justify-between gap-3">
               <span className="text-neutral-500">Date</span>
               <span className="text-right">
-                {new Date(order.createdAt).toLocaleString()}
+                {formatStaffDateTime(order.createdAt)}
               </span>
             </div>
             {order.paymentType && (
@@ -505,6 +505,14 @@ function PrintableReceiptCard({
       </CardContent>
     </Card>
   );
+}
+
+function formatStaffDateTime(value: string) {
+  return new Intl.DateTimeFormat("en-MY", {
+    timeZone: "Asia/Kuala_Lumpur",
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
 
 function PaymentSelector({

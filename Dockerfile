@@ -25,7 +25,7 @@ RUN apt-get update \
 
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev \
-  && npm install --no-save prisma@7.8.0 tsx@4.22.3 \
+  && npm install --no-save prisma@7.8.0 \
   && npm cache clean --force
 
 COPY --from=builder /app/.next ./.next

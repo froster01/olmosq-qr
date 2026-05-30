@@ -1,4 +1,9 @@
-import { redirect } from "next/navigation";
+import {
+  Banknote,
+  ClipboardList,
+  ReceiptText,
+} from "lucide-react";
+import Link from "next/link";
 
 import { prisma } from "@/lib/db";
 import { getCurrentShift } from "@/lib/shifts/current-shift";

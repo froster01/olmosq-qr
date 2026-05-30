@@ -5,13 +5,12 @@ export interface ReceiptSummaryItem {
 }
 
 export function buildReceiptItemDescription(item: ReceiptSummaryItem): string {
-  const variant = item.variant ? ` (${item.variant.name})` : "";
   const modifiers =
     item.modifiers.length > 0
       ? ` + ${item.modifiers.map((m) => m.modifier.name).join(", ")}`
       : "";
 
-  return `${item.item.name}${variant}${modifiers}`;
+  return `${item.item.name}${modifiers}`;
 }
 
 export function formatReceiptMoney(amount: number): string {

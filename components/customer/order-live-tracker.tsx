@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Clock3, RefreshCw } from "lucide-react";
+import { CheckCircle2, Clock3 } from "lucide-react";
 
 import {
   getCustomerTrackingState,
@@ -28,14 +28,11 @@ export function OrderLiveTracker({
 }) {
   const [status, setStatus] = useState(initialStatus);
   const [updatedAt, setUpdatedAt] = useState(initialUpdatedAt);
-  const [lastCheckedAt, setLastCheckedAt] = useState(initialUpdatedAt);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasConnectionError, setHasConnectionError] = useState(false);
 
   const tracking = useMemo(() => getCustomerTrackingState(status), [status]);
 
   const refreshStatus = useCallback(async () => {
-    setIsRefreshing(true);
     try {
       const response = await fetch(`/api/orders/${orderId}/status`, {
         cache: "no-store",
@@ -49,12 +46,9 @@ export function OrderLiveTracker({
 
       setStatus(data.status);
       setUpdatedAt(data.updatedAt);
-      setLastCheckedAt(new Date().toISOString());
       setHasConnectionError(false);
     } catch {
       setHasConnectionError(true);
-    } finally {
-      setIsRefreshing(false);
     }
   }, [orderId]);
 
@@ -92,7 +86,6 @@ export function OrderLiveTracker({
 
           setStatus(event.customerStatus.status);
           setUpdatedAt(event.customerStatus.updatedAt);
-          setLastCheckedAt(new Date().toISOString());
           setHasConnectionError(false);
         } catch {
           setHasConnectionError(true);
@@ -134,9 +127,7 @@ export function OrderLiveTracker({
           {tracking.isFinal ? (
             <CheckCircle2 className="h-4 w-4" />
           ) : (
-            <RefreshCw
-              className={cn("h-4 w-4", isRefreshing && "animate-spin")}
-            />
+            <Clock3 className="h-4 w-4" />
           )}
           {hasConnectionError ? "Reconnecting" : tracking.signal}
         </div>
@@ -162,7 +153,7 @@ export function OrderLiveTracker({
 
       <p className="customer-confirmation-live-meta">
         <Clock3 className="h-3.5 w-3.5" />
-        Updated {formatLiveTime(updatedAt)}. Checked {formatLiveTime(lastCheckedAt)}.
+        Updated {formatLiveTime(updatedAt)}.
       </p>
     </section>
   );

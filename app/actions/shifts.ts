@@ -12,7 +12,7 @@ import {
 
 const shiftRevalidationPaths = [
   "/staff/orders",
-  "/staff/cash-drawer",
+  "/staff/shift",
   "/staff/shift-reports",
   "/table/[tableCode]",
 ];

@@ -2639,7 +2639,7 @@
 }
 
 .staff-cash-summary-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.75rem), 1fr));
 }
 
 .staff-cash-metric-primary {
@@ -2647,7 +2647,7 @@
 }
 
 .staff-cash-drawer-layout {
-  grid-template-columns: minmax(0, 1fr) minmax(20rem, 22rem);
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 20rem);
 }
 
 .staff-cash-movement-form-card,
@@ -2677,15 +2677,25 @@
 }
 
 @media (max-width: 1100px) {
-  .staff-shift-focus-grid,
-  .staff-cash-drawer-layout,
   .staff-shift-reports-layout {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .staff-cash-orders-scroll,
   .staff-current-movements-list,
   .staff-closed-shifts-report-list {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 999px) {
+  .staff-shift-focus-grid,
+  .staff-cash-drawer-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .staff-cash-orders-scroll {
     max-height: none;
     overflow: visible;
     padding-right: 0;

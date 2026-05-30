@@ -404,7 +404,7 @@ function PrintableReceiptCard({
       <CardContent>
         <div className="mx-auto max-w-sm rounded-xl border bg-white p-3 text-neutral-950 shadow-sm print:border-0 print:p-0 print:shadow-none">
           <div className="text-center">
-            <p className="font-heading text-xl font-bold">Olmosq Cafe</p>
+            <p className="font-heading text-xl font-bold">Olmosq Coffee</p>
             <p className="text-[0.65rem] uppercase tracking-wide text-neutral-500">
               QR Order Receipt
             </p>

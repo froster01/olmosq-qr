@@ -31,6 +31,7 @@ export function OrderLiveTracker({
   const [lastCheckedAt, setLastCheckedAt] = useState(initialUpdatedAt);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasConnectionError, setHasConnectionError] = useState(false);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
 
   const tracking = useMemo(() => getCustomerTrackingState(status), [status]);
 
@@ -76,6 +77,7 @@ export function OrderLiveTracker({
           return;
         }
 
+        setIsSocketConnected(true);
         void refreshStatus();
       };
 
@@ -105,7 +107,7 @@ export function OrderLiveTracker({
 
       socket.onclose = () => {
         if (isMounted) {
-          setHasConnectionError(true);
+          setIsSocketConnected(false);
         }
       };
     }, 0);
@@ -116,6 +118,17 @@ export function OrderLiveTracker({
       socket?.close();
     };
   }, [orderId, refreshStatus]);
+
+  useEffect(() => {
+    if (tracking.isFinal || isSocketConnected) {
+      return;
+    }
+
+    const intervalId = setInterval(refreshStatus, 15000);
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [isSocketConnected, refreshStatus, tracking.isFinal]);
 
   return (
     <section className="customer-confirmation-section">

@@ -37,6 +37,7 @@ export function OrdersPageClient({
 }) {
   const [orders, setOrders] = useState<OrderData[]>(initialOrders);
   const [activeTab, setActiveTab] = useState("ALL");
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -66,6 +67,7 @@ export function OrdersPageClient({
           return;
         }
 
+        setIsSocketConnected(true);
         void refresh();
       };
 
@@ -81,7 +83,7 @@ export function OrdersPageClient({
           const staffOrder = event.staffOrder;
           setOrders((current) => sortOrders(upsertOrder(current, staffOrder)));
         } catch {
-          void refresh();
+          setIsSocketConnected(false);
         }
       };
 
@@ -91,7 +93,7 @@ export function OrdersPageClient({
 
       socket.onclose = () => {
         if (isMounted) {
-          void refresh();
+          setIsSocketConnected(false);
         }
       };
     }, 0);
@@ -102,6 +104,15 @@ export function OrdersPageClient({
       socket?.close();
     };
   }, [refresh]);
+
+  useEffect(() => {
+    if (isSocketConnected) {
+      return;
+    }
+
+    const interval = setInterval(refresh, 15000);
+    return () => clearInterval(interval);
+  }, [isSocketConnected, refresh]);
 
   const filtered =
     activeTab === "ALL"

@@ -9,7 +9,6 @@ import {
 import { StatusBadge } from "@/components/staff/status-badge";
 import { cn } from "@/lib/utils";
 import { buildOrderWebSocketUrl } from "@/lib/realtime/order-websocket-client";
-import { getOrderFallbackRefreshInterval } from "@/lib/realtime/order-polling-fallback";
 import type { OrderRealtimeEvent } from "@/lib/realtime/order-events";
 
 type OrderStatusResponse = {
@@ -117,22 +116,6 @@ export function OrderLiveTracker({
       socket?.close();
     };
   }, [orderId, refreshStatus]);
-
-  useEffect(() => {
-    const refreshInterval = getOrderFallbackRefreshInterval({
-      scope: "customer",
-      isFinal: Boolean(tracking.isFinal),
-    });
-
-    if (refreshInterval === null) {
-      return;
-    }
-
-    const intervalId = window.setInterval(refreshStatus, refreshInterval);
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [refreshStatus, tracking.isFinal]);
 
   return (
     <section className="customer-confirmation-section">

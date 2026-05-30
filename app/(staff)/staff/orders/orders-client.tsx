@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { OrdersList } from "@/components/staff/orders-list";
 import { buildOrderWebSocketUrl } from "@/lib/realtime/order-websocket-client";
-import { getOrderFallbackRefreshInterval } from "@/lib/realtime/order-polling-fallback";
 import type { OrderRealtimeEvent } from "@/lib/realtime/order-events";
 
 interface OrderData {
@@ -102,15 +101,6 @@ export function OrdersPageClient({
       window.clearTimeout(connectTimer);
       socket?.close();
     };
-  }, [refresh]);
-
-  useEffect(() => {
-    const refreshInterval = getOrderFallbackRefreshInterval({
-      scope: "staff",
-      isFinal: false,
-    });
-    const interval = setInterval(refresh, refreshInterval);
-    return () => clearInterval(interval);
   }, [refresh]);
 
   const filtered =

@@ -37,12 +37,30 @@ const event: OrderRealtimeEvent = {
 
 test("parseOrderSocketSubscription accepts staff and customer URLs", () => {
   assert.deepEqual(
-    parseOrderSocketSubscription(new URL("ws://localhost/ws/orders?scope=staff")),
+    parseOrderSocketSubscription(new URL("ws://localhost/ws/orders?scope=staff"), {
+      isStaffAuthenticated: true,
+    }),
     { scope: "staff" }
   );
   assert.deepEqual(
     parseOrderSocketSubscription(
       new URL("ws://localhost/ws/orders?scope=customer&orderId=ord_1")
+    ),
+    { scope: "customer", orderId: "ord_1" }
+  );
+});
+
+test("parseOrderSocketSubscription rejects unauthenticated staff URLs", () => {
+  assert.equal(
+    parseOrderSocketSubscription(new URL("ws://localhost/ws/orders?scope=staff"), {
+      isStaffAuthenticated: false,
+    }),
+    null
+  );
+  assert.deepEqual(
+    parseOrderSocketSubscription(
+      new URL("ws://localhost/ws/orders?scope=customer&orderId=ord_1"),
+      { isStaffAuthenticated: false }
     ),
     { scope: "customer", orderId: "ord_1" }
   );

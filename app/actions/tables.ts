@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { getUnauthorizedStaffActionResult } from "@/lib/staff-auth/guards";
 import { getMissingTableCreateInputs } from "@/lib/tables/table-generation";
 
 const generateTablesSchema = z.object({
@@ -10,6 +11,9 @@ const generateTablesSchema = z.object({
 });
 
 export async function generateTablesForQrAction(input: { count: number }) {
+  const unauthorized = await getUnauthorizedStaffActionResult();
+  if (unauthorized) return unauthorized;
+
   const parsed = generateTablesSchema.safeParse(input);
   if (!parsed.success) {
     return {

@@ -9,6 +9,7 @@ import {
 import { StatusBadge } from "@/components/staff/status-badge";
 import { cn } from "@/lib/utils";
 import { buildOrderWebSocketUrl } from "@/lib/realtime/order-websocket-client";
+import { getOrderFallbackRefreshInterval } from "@/lib/realtime/order-polling-fallback";
 import type { OrderRealtimeEvent } from "@/lib/realtime/order-events";
 
 type OrderStatusResponse = {
@@ -31,7 +32,6 @@ export function OrderLiveTracker({
   const [lastCheckedAt, setLastCheckedAt] = useState(initialUpdatedAt);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasConnectionError, setHasConnectionError] = useState(false);
-  const [isSocketConnected, setIsSocketConnected] = useState(false);
 
   const tracking = useMemo(() => getCustomerTrackingState(status), [status]);
 
@@ -77,7 +77,6 @@ export function OrderLiveTracker({
           return;
         }
 
-        setIsSocketConnected(true);
         void refreshStatus();
       };
 
@@ -107,7 +106,7 @@ export function OrderLiveTracker({
 
       socket.onclose = () => {
         if (isMounted) {
-          setIsSocketConnected(false);
+          setHasConnectionError(true);
         }
       };
     }, 0);
@@ -120,15 +119,20 @@ export function OrderLiveTracker({
   }, [orderId, refreshStatus]);
 
   useEffect(() => {
-    if (tracking.isFinal || isSocketConnected) {
+    const refreshInterval = getOrderFallbackRefreshInterval({
+      scope: "customer",
+      isFinal: Boolean(tracking.isFinal),
+    });
+
+    if (refreshInterval === null) {
       return;
     }
 
-    const intervalId = setInterval(refreshStatus, 15000);
+    const intervalId = window.setInterval(refreshStatus, refreshInterval);
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [isSocketConnected, refreshStatus, tracking.isFinal]);
+  }, [refreshStatus, tracking.isFinal]);
 
   return (
     <section className="customer-confirmation-section">

@@ -15,14 +15,16 @@ ENVIRONMENT="$1"
 GIT_REF="$2"
 
 if [ "$ENVIRONMENT" = "production" ]; then
-  SERVICE="app-prod"
+  APP_SERVICE="app-prod"
+  WORKER_SERVICE="worker-prod"
 else
-  SERVICE="app-staging"
+  APP_SERVICE="app-staging"
+  WORKER_SERVICE="worker-staging"
 fi
 
 git fetch origin "$GIT_REF"
 git checkout --detach FETCH_HEAD
 
-docker compose --env-file .env.vps -f compose.vps.yml build "$SERVICE"
+docker compose --env-file .env.vps -f compose.vps.yml build "$APP_SERVICE" "$WORKER_SERVICE"
 scripts/vps-migrate.sh "$ENVIRONMENT"
-docker compose --env-file .env.vps -f compose.vps.yml up -d "$SERVICE" reverse-proxy
+docker compose --env-file .env.vps -f compose.vps.yml up -d "$APP_SERVICE" "$WORKER_SERVICE" reverse-proxy

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { OrdersList } from "@/components/staff/orders-list";
 import { buildOrderWebSocketUrl } from "@/lib/realtime/order-websocket-client";
+import { getOrderFallbackRefreshInterval } from "@/lib/realtime/order-polling-fallback";
 import type { OrderRealtimeEvent } from "@/lib/realtime/order-events";
 
 interface OrderData {
@@ -37,7 +38,6 @@ export function OrdersPageClient({
 }) {
   const [orders, setOrders] = useState<OrderData[]>(initialOrders);
   const [activeTab, setActiveTab] = useState("ALL");
-  const [isSocketConnected, setIsSocketConnected] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -67,7 +67,6 @@ export function OrdersPageClient({
           return;
         }
 
-        setIsSocketConnected(true);
         void refresh();
       };
 
@@ -83,7 +82,7 @@ export function OrdersPageClient({
           const staffOrder = event.staffOrder;
           setOrders((current) => sortOrders(upsertOrder(current, staffOrder)));
         } catch {
-          setIsSocketConnected(false);
+          void refresh();
         }
       };
 
@@ -93,7 +92,7 @@ export function OrdersPageClient({
 
       socket.onclose = () => {
         if (isMounted) {
-          setIsSocketConnected(false);
+          void refresh();
         }
       };
     }, 0);
@@ -106,13 +105,13 @@ export function OrdersPageClient({
   }, [refresh]);
 
   useEffect(() => {
-    if (isSocketConnected) {
-      return;
-    }
-
-    const interval = setInterval(refresh, 15000);
+    const refreshInterval = getOrderFallbackRefreshInterval({
+      scope: "staff",
+      isFinal: false,
+    });
+    const interval = setInterval(refresh, refreshInterval);
     return () => clearInterval(interval);
-  }, [isSocketConnected, refresh]);
+  }, [refresh]);
 
   const filtered =
     activeTab === "ALL"

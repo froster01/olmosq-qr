@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import { buildReceiptItemDescription, formatReceiptMoney } from "./receipt-summary";
 
-test("buildReceiptItemDescription omits variant SKU labels and includes modifiers", () => {
+test("buildReceiptItemDescription includes named variant and modifiers", () => {
   assert.equal(
     buildReceiptItemDescription({
       item: { name: "Matcha Strawberry" },
@@ -13,7 +13,29 @@ test("buildReceiptItemDescription omits variant SKU labels and includes modifier
         { modifier: { name: "Oat Milk" } },
       ],
     }),
-    "Matcha Strawberry + Less Ice, Oat Milk"
+    "Matcha Strawberry (Large) + Less Ice, Oat Milk"
+  );
+});
+
+test("buildReceiptItemDescription omits SKU-like variant labels", () => {
+  assert.equal(
+    buildReceiptItemDescription({
+      item: { name: "Chocolate Caramel" },
+      variant: { name: "10015" },
+      modifiers: [],
+    }),
+    "Chocolate Caramel"
+  );
+});
+
+test("buildReceiptItemDescription omits SKU-like variant labels", () => {
+  assert.equal(
+    buildReceiptItemDescription({
+      item: { name: "Chocolate Caramel" },
+      variant: { name: "10015" },
+      modifiers: [],
+    }),
+    "Chocolate Caramel"
   );
 });
 

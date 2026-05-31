@@ -118,11 +118,13 @@ export async function notifyStaffPushSubscriptions({
   payload,
   onExpired,
   logger = console,
+  config = getStaffPushConfig(),
 }: {
   subscriptions: StaffPushSubscriptionInput[];
   payload: StaffPushPayload;
   onExpired?: (subscription: StaffPushSubscriptionInput) => Promise<void>;
   logger?: StaffPushLogger;
+  config?: StaffPushConfig;
 }) {
   const results = await Promise.allSettled(
     subscriptions.map(async (subscription) => {
@@ -130,6 +132,7 @@ export async function notifyStaffPushSubscriptions({
         const result = await sendStaffPushNotification({
           subscription,
           payload,
+          config,
         });
         if (!result.success) {
           logger.error(

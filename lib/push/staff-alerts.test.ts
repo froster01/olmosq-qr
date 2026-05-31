@@ -93,6 +93,10 @@ test("notifyStaffPushSubscriptions logs failed send details", async () => {
     logger: {
       error: (message, error) => errors.push({ message, error }),
     },
+    config: {
+      enabled: false,
+      publicKey: null,
+    },
   });
 
   assert.equal(errors.length, 1);

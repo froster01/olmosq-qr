@@ -75,18 +75,13 @@ test("orders page guards staff when no shift is open", () => {
   assert.match(ordersClient, /blur/);
 });
 
-test("staff uses web push alerts without in-page notification sound", () => {
+test("staff uses hybrid sound and sleep fallback push alerts", () => {
   assert.equal(
     existsSync(
-      path.join(root, "components/staff/staff-notification-sound-toggle.tsx")
+      path.join(root, "lib/notifications/staff-notification-sound.ts")
     ),
-    false
+    true
   );
-  assert.equal(
-    existsSync(path.join(root, "lib/notifications/staff-notification-sound.ts")),
-    false
-  );
-  assert.equal(existsSync(path.join(root, "public/sounds/new-order.mp3")), false);
   assert.equal(
     existsSync(path.join(root, "components/staff/staff-push-alerts.tsx")),
     true
@@ -98,6 +93,12 @@ test("staff uses web push alerts without in-page notification sound", () => {
     true
   );
   assert.equal(existsSync(path.join(root, "public/staff-push-sw.js")), true);
+  assert.equal(
+    existsSync(
+      path.join(root, "app/(staff)/staff/(protected)/alert-presence/route.ts")
+    ),
+    true
+  );
 
   const staffLayout = readFileSync(
     path.join(root, "app/(staff)/staff/(protected)/layout.tsx"),
@@ -123,19 +124,28 @@ test("staff uses web push alerts without in-page notification sound", () => {
     path.join(root, "lib/realtime/staff-notification-processor.ts"),
     "utf8"
   );
+  const staffPushWorker = readFileSync(
+    path.join(root, "public/staff-push-sw.js"),
+    "utf8"
+  );
 
   assert.match(staffLayout, /StaffPushAlerts/);
-  assert.doesNotMatch(staffLayout, /StaffNotificationSoundToggle/);
-  assert.doesNotMatch(ordersClient, /staff-notification-sound/);
-  assert.doesNotMatch(ordersClient, /getStaffNotificationSound/);
-  assert.doesNotMatch(ordersClient, /shouldPlayStaffNotificationSound/);
   assert.match(orderQueues, /STAFF_NOTIFICATIONS_QUEUE/);
   assert.match(ordersAction, /enqueueStaffOrderCreatedNotification/);
-  assert.match(pushAlerts, /Push alerts/);
+  assert.match(pushAlerts, /Alert on/);
+  assert.match(pushAlerts, /Alert off/);
+  assert.match(pushAlerts, /createStaffNotificationSound/);
+  assert.match(pushAlerts, /buildOrderWebSocketUrl/);
+  assert.match(pushAlerts, /\/staff\/alert-presence/);
+  assert.match(pushAlerts, /visibilitychange/);
   assert.match(pushAlerts, /syncExistingPushSubscription/);
   assert.match(pushAlerts, /method: "POST"/);
   assert.match(pushAlerts, /getSubscription/);
-  assert.doesNotMatch(staffNotifications, /isStaffOrdersPageActive/);
+  assert.match(staffNotifications, /filterInactiveStaffPushSubscriptions/);
+  assert.match(staffPushWorker, /renotify: true/);
+  assert.match(staffPushWorker, /requireInteraction: true/);
+  assert.match(staffPushWorker, /vibrate:/);
+  assert.doesNotMatch(ordersClient, /staff-notification-sound/);
 });
 
 test("staff logout button submits the logout form", () => {

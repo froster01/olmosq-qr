@@ -1,10 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Bell, BellOff } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+  createStaffNotificationSound,
+  shouldPlayStaffNotificationSound,
+} from "@/lib/notifications/staff-notification-sound";
+import type { OrderRealtimeEvent } from "@/lib/realtime/order-events";
+import { buildOrderWebSocketUrl } from "@/lib/realtime/order-websocket-client";
 
 type PushSupportState =
   | "checking"
@@ -39,7 +45,26 @@ async function syncExistingPushSubscription(subscription: PushSubscription) {
 export function StaffPushAlerts() {
   const [state, setState] = useState<PushSupportState>("checking");
   const [publicKey, setPublicKey] = useState<string | null>(null);
+  const [subscriptionEndpoint, setSubscriptionEndpoint] = useState<string | null>(
+    null
+  );
+  const [soundUnlocked, setSoundUnlocked] = useState(false);
   const [busy, setBusy] = useState(false);
+  const soundRef = useRef<ReturnType<typeof createStaffNotificationSound> | null>(
+    null
+  );
+
+  useEffect(() => {
+    soundRef.current = createStaffNotificationSound({
+      src: "/sounds/new-order.mp3",
+    });
+  }, []);
+
+  const unlockAlertSound = useCallback(async () => {
+    const unlocked = (await soundRef.current?.unlock()) ?? false;
+    setSoundUnlocked(unlocked);
+    return unlocked;
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,6 +88,8 @@ export function StaffPushAlerts() {
 
       if (!config.enabled || !config.publicKey) {
         setPublicKey(config.publicKey ?? null);
+        setSubscriptionEndpoint(null);
+        setSoundUnlocked(false);
         setState("unconfigured");
         return;
       }
@@ -70,6 +97,8 @@ export function StaffPushAlerts() {
       setPublicKey(config.publicKey);
 
       if (Notification.permission === "denied") {
+        setSubscriptionEndpoint(null);
+        setSoundUnlocked(false);
         setState("denied");
         return;
       }
@@ -79,15 +108,16 @@ export function StaffPushAlerts() {
 
       if (!cancelled) {
         if (!subscription) {
+          setSubscriptionEndpoint(null);
+          setSoundUnlocked(false);
           setState("disabled");
           return;
         }
 
-        setState(
-          (await syncExistingPushSubscription(subscription))
-            ? "enabled"
-            : "disabled"
-        );
+        const synced = await syncExistingPushSubscription(subscription);
+        setSubscriptionEndpoint(synced ? subscription.endpoint : null);
+        setSoundUnlocked(false);
+        setState(synced ? "enabled" : "disabled");
       }
     }
 
@@ -121,6 +151,8 @@ export function StaffPushAlerts() {
         throw new Error("Failed to save push subscription");
       }
 
+      await unlockAlertSound();
+      setSubscriptionEndpoint(subscription.endpoint);
       setState("enabled");
       toast.success("Push alerts enabled");
     } catch {
@@ -146,6 +178,8 @@ export function StaffPushAlerts() {
         await subscription.unsubscribe();
       }
 
+      setSubscriptionEndpoint(null);
+      setSoundUnlocked(false);
       setState("disabled");
       toast.success("Push alerts disabled");
     } catch {
@@ -155,6 +189,118 @@ export function StaffPushAlerts() {
     }
   }
 
+  useEffect(() => {
+    if (state !== "enabled" || soundUnlocked) {
+      return;
+    }
+
+    const handleUserGesture = () => {
+      void unlockAlertSound();
+    };
+
+    window.addEventListener("pointerdown", handleUserGesture, { once: true });
+    window.addEventListener("keydown", handleUserGesture, { once: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", handleUserGesture);
+      window.removeEventListener("keydown", handleUserGesture);
+    };
+  }, [state, soundUnlocked, unlockAlertSound]);
+
+  useEffect(() => {
+    if (state !== "enabled" || !subscriptionEndpoint || !soundUnlocked) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function sendPresence() {
+      if (cancelled || document.visibilityState !== "visible") {
+        return;
+      }
+
+      try {
+        await fetch("/staff/alert-presence", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: subscriptionEndpoint }),
+        });
+      } catch {
+        // Presence is a best-effort signal; failed heartbeats should not affect alerts.
+      }
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void sendPresence();
+      }
+    };
+
+    void sendPresence();
+    const interval = window.setInterval(sendPresence, 10_000);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [state, subscriptionEndpoint, soundUnlocked]);
+
+  useEffect(() => {
+    if (state !== "enabled") {
+      return;
+    }
+
+    let cancelled = false;
+    let socket: WebSocket | null = null;
+    let reconnectTimer: number | null = null;
+
+    function connect() {
+      if (cancelled) {
+        return;
+      }
+
+      socket = new WebSocket(buildOrderWebSocketUrl({ scope: "staff" }));
+
+      socket.onmessage = (message) => {
+        try {
+          const event = JSON.parse(message.data) as OrderRealtimeEvent;
+          if (
+            shouldPlayStaffNotificationSound({
+              kind: event.kind,
+              isDocumentVisible: document.visibilityState === "visible",
+            })
+          ) {
+            void soundRef.current?.play();
+          }
+        } catch {
+          // Ignore malformed realtime messages; the orders page refresh path remains separate.
+        }
+      };
+
+      socket.onerror = () => {
+        socket?.close();
+      };
+
+      socket.onclose = () => {
+        if (!cancelled) {
+          reconnectTimer = window.setTimeout(connect, 3000);
+        }
+      };
+    }
+
+    connect();
+
+    return () => {
+      cancelled = true;
+      if (reconnectTimer) {
+        window.clearTimeout(reconnectTimer);
+      }
+      socket?.close();
+    };
+  }, [state]);
+
   if (state === "checking" || state === "unsupported") {
     return null;
   }
@@ -163,7 +309,7 @@ export function StaffPushAlerts() {
     return (
       <Button variant="outline" size="sm" disabled className="staff-push-button">
         <BellOff className="h-4 w-4" />
-        Push alerts off
+        Alert off
       </Button>
     );
   }
@@ -190,7 +336,7 @@ export function StaffPushAlerts() {
       ) : (
         <BellOff className="h-4 w-4" />
       )}
-      {state === "enabled" ? "Push alerts on" : "Push alerts"}
+      {state === "enabled" ? "Alert on" : "Alert off"}
     </Button>
   );
 }

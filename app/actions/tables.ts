@@ -1,8 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { revalidateTableData } from "@/lib/cache/revalidation";
 import { getUnauthorizedStaffActionResult } from "@/lib/staff-auth/guards";
 import { getMissingTableCreateInputs } from "@/lib/tables/table-generation";
 
@@ -37,8 +37,7 @@ export async function generateTablesForQrAction(input: { count: number }) {
       });
     }
 
-    revalidatePath("/staff/tables");
-    revalidatePath("/table/[tableCode]", "page");
+    revalidateTableData();
 
     return {
       success: true,

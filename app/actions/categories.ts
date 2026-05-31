@@ -1,7 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { revalidateMenuData } from "@/lib/cache/revalidation";
 import { moveCategoryInOrder } from "@/lib/menu/category-sort";
 import { getUnauthorizedStaffActionResult } from "@/lib/staff-auth/guards";
 import { z } from "zod";
@@ -66,8 +66,7 @@ export async function updateCategoryTemperatureAction(input: {
     data: { asksTemperature: parsed.data.asksTemperature },
   });
 
-  revalidatePath("/staff/menu-settings");
-  revalidatePath("/table/[tableCode]", "page");
+  revalidateMenuData();
 
   return { success: true };
 }
@@ -89,8 +88,7 @@ export async function updateCategoryVisibilityAction(input: {
     data: { isVisibleInMenu: parsed.data.isVisibleInMenu },
   });
 
-  revalidatePath("/staff/menu-settings");
-  revalidatePath("/table/[tableCode]", "page");
+  revalidateMenuData();
 
   return { success: true };
 }
@@ -127,8 +125,7 @@ export async function moveCategoryAction(input: {
     )
   );
 
-  revalidatePath("/staff/menu-settings");
-  revalidatePath("/table/[tableCode]", "page");
+  revalidateMenuData();
 
   return { success: true };
 }

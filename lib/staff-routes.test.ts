@@ -132,6 +132,9 @@ test("staff uses web push alerts without in-page notification sound", () => {
   assert.match(orderQueues, /STAFF_NOTIFICATIONS_QUEUE/);
   assert.match(ordersAction, /enqueueStaffOrderCreatedNotification/);
   assert.match(pushAlerts, /Push alerts/);
+  assert.match(pushAlerts, /syncExistingPushSubscription/);
+  assert.match(pushAlerts, /method: "POST"/);
+  assert.match(pushAlerts, /getSubscription/);
   assert.doesNotMatch(staffNotifications, /isStaffOrdersPageActive/);
 });
 

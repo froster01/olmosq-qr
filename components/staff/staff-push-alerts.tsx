@@ -26,6 +26,16 @@ async function registerStaffServiceWorker() {
   return navigator.serviceWorker.ready.then(() => registration);
 }
 
+async function syncExistingPushSubscription(subscription: PushSubscription) {
+  const response = await fetch("/staff/push-subscriptions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(subscription),
+  });
+
+  return response.ok;
+}
+
 export function StaffPushAlerts() {
   const [state, setState] = useState<PushSupportState>("checking");
   const [publicKey, setPublicKey] = useState<string | null>(null);
@@ -68,7 +78,16 @@ export function StaffPushAlerts() {
       const subscription = await registration.pushManager.getSubscription();
 
       if (!cancelled) {
-        setState(subscription ? "enabled" : "disabled");
+        if (!subscription) {
+          setState("disabled");
+          return;
+        }
+
+        setState(
+          (await syncExistingPushSubscription(subscription))
+            ? "enabled"
+            : "disabled"
+        );
       }
     }
 
@@ -98,13 +117,7 @@ export function StaffPushAlerts() {
         applicationServerKey: urlBase64ToUint8Array(publicKey),
       });
 
-      const response = await fetch("/staff/push-subscriptions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(subscription),
-      });
-
-      if (!response.ok) {
+      if (!(await syncExistingPushSubscription(subscription))) {
         throw new Error("Failed to save push subscription");
       }
 

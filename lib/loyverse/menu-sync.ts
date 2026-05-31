@@ -1,6 +1,30 @@
 import { prisma } from "@/lib/db";
 import { fetchAllPages } from "./client";
-import type { LoyverseCategory, LoyverseItem } from "./types";
+import type { LoyverseCategory, LoyverseItem, LoyverseItemVariant } from "./types";
+
+function getVariantStoreOverride(
+  variant: LoyverseItemVariant,
+  storeId?: string
+) {
+  if (!storeId) return null;
+  return variant.stores.find((store) => store.store_id === storeId) ?? null;
+}
+
+export function getLoyverseVariantMenuPrice(
+  variant: LoyverseItemVariant,
+  storeId?: string
+) {
+  const storeOverride = getVariantStoreOverride(variant, storeId);
+  return Number(storeOverride?.price ?? variant.default_price ?? 0);
+}
+
+export function isLoyverseVariantAvailableForStore(
+  variant: LoyverseItemVariant,
+  storeId?: string
+) {
+  const storeOverride = getVariantStoreOverride(variant, storeId);
+  return storeOverride?.available_for_sale ?? true;
+}
 
 export async function syncCategories(): Promise<number> {
   const categories = await fetchAllPages<LoyverseCategory>(
@@ -29,6 +53,7 @@ export async function syncCategories(): Promise<number> {
 
 export async function syncItems(): Promise<number> {
   const items = await fetchAllPages<LoyverseItem>("/items", "items");
+  const storeId = process.env.LOYVERSE_STORE_ID?.trim();
   let count = 0;
 
   for (const item of items) {
@@ -50,8 +75,15 @@ export async function syncItems(): Promise<number> {
       continue;
     }
 
-    // Use first variant's price as base price
-    const basePrice = item.variants?.[0]?.default_price ?? 0;
+    const activeVariants = (item.variants ?? []).filter(
+      (variant) =>
+        !variant.deleted_at && isLoyverseVariantAvailableForStore(variant, storeId)
+    );
+
+    // Use the first sellable variant's configured store price as base price.
+    const basePrice = activeVariants[0]
+      ? getLoyverseVariantMenuPrice(activeVariants[0], storeId)
+      : 0;
 
     await prisma.item.upsert({
       where: { loyverseId: item.id },
@@ -61,7 +93,7 @@ export async function syncItems(): Promise<number> {
         basePrice,
         categoryId: category.id,
         imageUrl: item.image_url,
-        isAvailable: true,
+        isAvailable: activeVariants.length > 0,
       },
       create: {
         loyverseId: item.id,
@@ -70,21 +102,21 @@ export async function syncItems(): Promise<number> {
         basePrice,
         categoryId: category.id,
         imageUrl: item.image_url,
+        isAvailable: activeVariants.length > 0,
       },
     });
 
     // Sync variants
-    if (item.variants && item.variants.length > 0) {
+    if (activeVariants.length > 0) {
       const dbItem = await prisma.item.findUnique({
         where: { loyverseId: item.id },
       });
       if (!dbItem) continue;
 
-      for (const variant of item.variants) {
-        if (variant.deleted_at) continue;
-
+      for (const variant of activeVariants) {
         // Price adjustment relative to base price
-        const priceAdjustment = variant.default_price - basePrice;
+        const priceAdjustment =
+          getLoyverseVariantMenuPrice(variant, storeId) - basePrice;
 
         await prisma.variant.upsert({
           where: { loyverseId: variant.variant_id },

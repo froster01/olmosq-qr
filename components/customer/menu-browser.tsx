@@ -5,24 +5,18 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { MenuItemCard } from "./menu-item-card";
 import { ItemDetailDialog } from "./item-detail-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Item, Variant, ItemModifier, Category } from "@prisma/client";
+import type {
+  CustomerMenuCategory,
+  CustomerMenuItem,
+} from "@/lib/menu/customer-menu-data";
 import { shouldAskTemperatureForCategory } from "@/lib/menu/category-temperature";
 
-type ItemWithRelations = Item & {
-  variants: Variant[];
-  modifiers: ItemModifier[];
-};
-
-type ItemWithTemperature = ItemWithRelations & {
+type ItemWithTemperature = CustomerMenuItem & {
   asksTemperature: boolean;
 };
 
-type CategoryWithItems = Category & {
-  items: ItemWithRelations[];
-};
-
 interface MenuBrowserProps {
-  categories: CategoryWithItems[];
+  categories: CustomerMenuCategory[];
   loading?: boolean;
 }
 

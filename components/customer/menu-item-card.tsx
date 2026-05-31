@@ -3,11 +3,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Coffee } from "lucide-react";
-import type { Item, Variant, ItemModifier } from "@prisma/client";
+import type { CustomerMenuItem } from "@/lib/menu/customer-menu-data";
 
-type ItemWithRelations = Item & {
-  variants: Variant[];
-  modifiers: ItemModifier[];
+type ItemWithRelations = CustomerMenuItem & {
   asksTemperature: boolean;
 };
 

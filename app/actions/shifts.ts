@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { revalidateClosedShiftReportData } from "@/lib/cache/revalidation";
 import { calculateCashDrawerTotals } from "@/lib/payments/cash-drawer";
 import {
   calculateCashVariance,
@@ -165,6 +166,7 @@ export async function closeShiftAction(actualCash: number, note?: string) {
   });
 
   revalidateShiftViews();
+  revalidateClosedShiftReportData();
   return { success: true, data: { shiftId: shift.id } };
 }
 

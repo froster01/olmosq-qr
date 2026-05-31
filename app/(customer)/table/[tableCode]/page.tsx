@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/db";
+import { getCachedCustomerMenuCategories } from "@/lib/menu/customer-menu-data";
 import { getCurrentShift } from "@/lib/shifts/current-shift";
 import { notFound } from "next/navigation";
 import { OrderingPageClient } from "./ordering-client";
 import { BrandMark } from "@/components/brand-mark";
 import { Card, CardContent } from "@/components/ui/card";
 import { Clock } from "lucide-react";
-import { shouldShowCategoryInCustomerMenu } from "@/lib/menu/category-visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -29,30 +29,13 @@ export default async function TableOrderingPage({ params }: PageProps) {
     return <ShopClosed tableNumber={table.number} />;
   }
 
-  const categories = await prisma.category.findMany({
-    orderBy: { sortOrder: "asc" },
-    include: {
-      items: {
-        where: { isAvailable: true },
-        orderBy: { name: "asc" },
-        include: {
-          variants: { orderBy: { sortOrder: "asc" } },
-          modifiers: true,
-        },
-      },
-    },
-  });
-
-  // Filter out categories with no available items
-  const filteredCategories = categories.filter(
-    (cat) => shouldShowCategoryInCustomerMenu(cat) && cat.items.length > 0
-  );
+  const categories = await getCachedCustomerMenuCategories();
 
   return (
     <OrderingPageClient
       tableCode={tableCode}
       tableNumber={table.number}
-      categories={JSON.parse(JSON.stringify(filteredCategories))}
+      categories={categories}
     />
   );
 }

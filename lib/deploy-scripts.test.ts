@@ -58,3 +58,37 @@ test("github deploy workflows can sync vps env file before deploy", () => {
     assert.match(content, /scripts\/vps-deploy\.sh "\$2" "\$3"/);
   }
 });
+
+test("vps workers have outbound network access for external APIs", () => {
+  const composeFile = readFileSync(path.join(root, "compose.vps.yml"), "utf8");
+
+  assert.match(
+    composeFile,
+    /worker-prod:[\s\S]*?networks:[\s\S]*?- olmosq-public[\s\S]*?- olmosq-prod/
+  );
+  assert.match(
+    composeFile,
+    /worker-staging:[\s\S]*?networks:[\s\S]*?- olmosq-public[\s\S]*?- olmosq-staging/
+  );
+});
+
+test("vps app and worker services use cloudflare dns", () => {
+  const composeFile = readFileSync(path.join(root, "compose.vps.yml"), "utf8");
+
+  assert.match(
+    composeFile,
+    /x-cloudflare-dns: &cloudflare-dns\s+- 1\.1\.1\.1\s+- 1\.0\.0\.1/
+  );
+
+  for (const service of [
+    "app-prod",
+    "app-staging",
+    "worker-prod",
+    "worker-staging",
+  ]) {
+    assert.match(
+      composeFile,
+      new RegExp(`${service}:[\\s\\S]*?dns: \\*cloudflare-dns`)
+    );
+  }
+});

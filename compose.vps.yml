@@ -1,3 +1,7 @@
+x-cloudflare-dns: &cloudflare-dns
+  - 1.1.1.1
+  - 1.0.0.1
+
 services:
   reverse-proxy:
     image: caddy:2.8-alpine
@@ -32,6 +36,7 @@ services:
     image: olmosq-qr:prod
     container_name: olmosq-app-prod
     restart: unless-stopped
+    dns: *cloudflare-dns
     depends_on:
       postgres-prod:
         condition: service_healthy
@@ -68,6 +73,7 @@ services:
     image: olmosq-qr:staging
     container_name: olmosq-app-staging
     restart: unless-stopped
+    dns: *cloudflare-dns
     depends_on:
       postgres-staging:
         condition: service_healthy
@@ -99,6 +105,7 @@ services:
     image: olmosq-qr:prod
     container_name: olmosq-worker-prod
     restart: unless-stopped
+    dns: *cloudflare-dns
     command: npm run worker
     depends_on:
       postgres-prod:
@@ -120,12 +127,14 @@ services:
     mem_limit: 512m
     cpus: 0.5
     networks:
+      - olmosq-public
       - olmosq-prod
 
   worker-staging:
     image: olmosq-qr:staging
     container_name: olmosq-worker-staging
     restart: unless-stopped
+    dns: *cloudflare-dns
     command: npm run worker
     depends_on:
       postgres-staging:
@@ -147,6 +156,7 @@ services:
     mem_limit: 512m
     cpus: 0.5
     networks:
+      - olmosq-public
       - olmosq-staging
 
   postgres-prod:

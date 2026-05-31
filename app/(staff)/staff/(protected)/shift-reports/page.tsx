@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { prisma } from "@/lib/db";
 import { formatReceiptMoney } from "@/lib/orders/receipt-summary";
 import { calculateCashDrawerTotals } from "@/lib/payments/cash-drawer";
+import { getCachedClosedShiftReportSummaries } from "@/lib/shifts/closed-shift-report-data";
 import { getCurrentShift } from "@/lib/shifts/current-shift";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +27,10 @@ function formatDateTime(date: Date | string | null): string {
 }
 
 export default async function ShiftReportsPage() {
-  const currentShift = await getCurrentShift();
+  const [currentShift, closedShifts] = await Promise.all([
+    getCurrentShift(),
+    getCachedClosedShiftReportSummaries(),
+  ]);
   const currentShiftData = currentShift
     ? await prisma.shift.findUnique({
         where: { id: currentShift.id },
@@ -36,16 +40,6 @@ export default async function ShiftReportsPage() {
         },
       })
     : null;
-
-  const closedShifts = await prisma.shift.findMany({
-    where: { status: "CLOSED" },
-    include: {
-      orders: { include: { paymentType: true } },
-      cashMovements: true,
-    },
-    orderBy: { closedAt: "desc" },
-    take: 20,
-  });
 
   const currentTotals = currentShiftData
     ? calculateCashDrawerTotals({
@@ -178,71 +172,50 @@ export default async function ShiftReportsPage() {
                 closed.
               </div>
             ) : (
-              closedShifts.map((shift) => {
-                const totals = calculateCashDrawerTotals({
-                  startingCash: Number(shift.startingCash),
-                  orders: shift.orders.map((order) => ({
-                    status: order.status,
-                    total: Number(order.total),
-                    cashReceived:
-                      order.cashReceived === null
-                        ? null
-                        : Number(order.cashReceived),
-                    cashChange:
-                      order.cashChange === null ? null : Number(order.cashChange),
-                    paymentType: order.paymentType,
-                  })),
-                  movements: shift.cashMovements.map((movement) => ({
-                    type: movement.type,
-                    amount: Number(movement.amount),
-                  })),
-                });
-
-                return (
-                  <div
-                    key={shift.id}
-                    className="staff-closed-shift-row rounded-xl border bg-card p-3 text-sm"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-heading text-lg font-bold">
-                          Shift {shift.shiftNumber}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDateTime(shift.openedAt)} -{" "}
-                          {formatDateTime(shift.closedAt)}
-                        </p>
-                      </div>
-                      <p className="font-heading font-bold text-primary">
-                        {formatReceiptMoney(
-                          shift.actualCash === null
-                            ? totals.expectedCash
-                            : Number(shift.actualCash)
-                        )}
+              closedShifts.map((shift) => (
+                <div
+                  key={shift.id}
+                  className="staff-closed-shift-row rounded-xl border bg-card p-3 text-sm"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-heading text-lg font-bold">
+                        Shift {shift.shiftNumber}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDateTime(shift.openedAt)} -{" "}
+                        {formatDateTime(shift.closedAt)}
                       </p>
                     </div>
-                    <div className="mt-3 grid grid-cols-3 gap-2 rounded-xl bg-muted/35 p-2">
-                      <ReportFact label="Orders" value={shift.orders.length} />
-                      <ReportFact
-                        label="Expected"
-                        value={formatReceiptMoney(totals.expectedCash)}
-                      />
-                      <ReportFact
-                        label="Moves"
-                        value={shift.cashMovements.length}
-                      />
-                    </div>
-                    <Link
-                      className="mt-3 block"
-                      href={`/staff/shift-reports/${shift.id}`}
-                    >
-                      <Button className="w-full" size="sm" variant="outline">
-                        View Report
-                      </Button>
-                    </Link>
+                    <p className="font-heading font-bold text-primary">
+                      {formatReceiptMoney(
+                        shift.actualCash === null
+                          ? shift.expectedCash
+                          : shift.actualCash
+                      )}
+                    </p>
                   </div>
-                );
-              })
+                  <div className="mt-3 grid grid-cols-3 gap-2 rounded-xl bg-muted/35 p-2">
+                    <ReportFact label="Orders" value={shift.orderCount} />
+                    <ReportFact
+                      label="Expected"
+                      value={formatReceiptMoney(shift.expectedCash)}
+                    />
+                    <ReportFact
+                      label="Moves"
+                      value={shift.cashMovementCount}
+                    />
+                  </div>
+                  <Link
+                    className="mt-3 block"
+                    href={`/staff/shift-reports/${shift.id}`}
+                  >
+                    <Button className="w-full" size="sm" variant="outline">
+                      View Report
+                    </Button>
+                  </Link>
+                </div>
+              ))
             )}
           </CardContent>
         </Card>

@@ -6,6 +6,7 @@ import {
 import Link from "next/link";
 
 import { prisma } from "@/lib/db";
+import { getCachedClosedShiftCount } from "@/lib/shifts/closed-shift-report-data";
 import { getCurrentShift } from "@/lib/shifts/current-shift";
 import { formatOrderDisplayNumber } from "@/lib/shifts/shift-rules";
 import { formatReceiptMoney } from "@/lib/orders/receipt-summary";
@@ -37,7 +38,10 @@ function formatTime(date: Date | string | null): string {
 }
 
 export default async function ShiftPage() {
-  const currentShift = await getCurrentShift();
+  const [currentShift, closedShiftCount] = await Promise.all([
+    getCurrentShift(),
+    getCachedClosedShiftCount(),
+  ]);
   const cashOrders = currentShift
     ? await prisma.order.findMany({
         where: {
@@ -112,10 +116,6 @@ export default async function ShiftPage() {
         expectedCash: cashSummary.expectedCash,
       }
     : null;
-  const closedShiftCount = await prisma.shift.count({
-    where: { status: "CLOSED" },
-  });
-
   return (
     <div className="staff-page staff-cash-drawer-page space-y-4">
       <div className="staff-page-header staff-cash-drawer-header flex flex-wrap items-end justify-between gap-3">

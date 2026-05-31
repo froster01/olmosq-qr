@@ -11,12 +11,14 @@ const staffOrderInclude = {
   _count: { select: { items: true } },
 } as const;
 
-export async function getCurrentShiftOrderSummaries() {
-  const currentShift = await prisma.shift.findFirst({
-    where: { status: "OPEN" },
-    orderBy: { openedAt: "desc" },
-    select: { id: true },
-  });
+export async function getCurrentShiftOrderSummaries(shiftId?: string) {
+  const currentShift = shiftId
+    ? { id: shiftId }
+    : await prisma.shift.findFirst({
+        where: { status: "OPEN" },
+        orderBy: { openedAt: "desc" },
+        select: { id: true },
+      });
 
   if (!currentShift) {
     return [];

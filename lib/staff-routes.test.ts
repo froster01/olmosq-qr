@@ -44,3 +44,33 @@ test("protected staff routes have navigation loading feedback", () => {
   assert.match(staffNavLink, /useLinkStatus/);
   assert.match(staffNavLink, /aria-hidden/);
 });
+
+test("orders page guards staff when no shift is open", () => {
+  const ordersPage = readFileSync(
+    path.join(root, "app/(staff)/staff/(protected)/orders/page.tsx"),
+    "utf8"
+  );
+  const ordersClient = readFileSync(
+    path.join(root, "app/(staff)/staff/(protected)/orders/orders-client.tsx"),
+    "utf8"
+  );
+  const orderRealtimeData = readFileSync(
+    path.join(root, "lib/orders/order-realtime-data.ts"),
+    "utf8"
+  );
+
+  assert.match(
+    ordersPage,
+    /currentShift\s*\?\s*await getCurrentShiftOrderSummaries/
+  );
+  assert.match(ordersPage, /initialOrders=\{initialOrders\}/);
+  assert.match(
+    orderRealtimeData,
+    /getCurrentShiftOrderSummaries\(shiftId\?: string\)/
+  );
+  assert.match(ordersClient, /if \(!currentShift\)/);
+  assert.match(ordersClient, /href="\/staff\/shift"/);
+  assert.match(ordersClient, /Open a shift before taking orders/);
+  assert.match(ordersClient, /pointer-events-none/);
+  assert.match(ordersClient, /blur/);
+});

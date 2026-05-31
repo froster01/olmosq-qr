@@ -17,9 +17,12 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
-      tag: payload.tag,
-      icon: "/favicon.ico",
-      badge: "/favicon.ico",
+      tag: "staff-order-alert",
+      renotify: true,
+      requireInteraction: true,
+      vibrate: [200, 100, 200, 100, 400],
+      icon: "/icons/olmosq-icon-192.png",
+      badge: "/icons/olmosq-icon-192.png",
       data: { url: payload.url || "/staff/orders" },
     })
   );

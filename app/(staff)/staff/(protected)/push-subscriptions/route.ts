@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
-import { getStaffPushConfig } from "@/lib/push/staff-fallback-alerts";
+import { getStaffPushConfig } from "@/lib/push/staff-alerts";
 import { isStaffCookieHeaderAuthenticated } from "@/lib/staff-auth/request";
 
 const pushSubscriptionSchema = z.object({

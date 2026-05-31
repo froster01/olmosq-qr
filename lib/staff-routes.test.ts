@@ -75,37 +75,20 @@ test("orders page guards staff when no shift is open", () => {
   assert.match(ordersClient, /blur/);
 });
 
-test("staff order events can play an enabled notification sound", () => {
+test("staff uses web push alerts without in-page notification sound", () => {
   assert.equal(
     existsSync(
       path.join(root, "components/staff/staff-notification-sound-toggle.tsx")
     ),
-    true
+    false
   );
-
-  const staffLayout = readFileSync(
-    path.join(root, "app/(staff)/staff/(protected)/layout.tsx"),
-    "utf8"
-  );
-  const ordersClient = readFileSync(
-    path.join(root, "app/(staff)/staff/(protected)/orders/orders-client.tsx"),
-    "utf8"
-  );
-  const soundToggle = readFileSync(
-    path.join(root, "components/staff/staff-notification-sound-toggle.tsx"),
-    "utf8"
-  );
-
-  assert.match(staffLayout, /StaffNotificationSoundToggle/);
-  assert.match(ordersClient, /shouldPlayStaffNotificationSound/);
-  assert.match(ordersClient, /getStaffNotificationSound\(\)\.play/);
-  assert.match(soundToggle, /localStorage/);
-  assert.match(soundToggle, /STAFF_NOTIFICATION_SOUND_CHANGE_EVENT/);
-});
-
-test("staff uses open-page sound with web push fallback alerts", () => {
   assert.equal(
-    existsSync(path.join(root, "components/staff/staff-push-fallback-alerts.tsx")),
+    existsSync(path.join(root, "lib/notifications/staff-notification-sound.ts")),
+    false
+  );
+  assert.equal(existsSync(path.join(root, "public/sounds/new-order.mp3")), false);
+  assert.equal(
+    existsSync(path.join(root, "components/staff/staff-push-alerts.tsx")),
     true
   );
   assert.equal(
@@ -115,15 +98,13 @@ test("staff uses open-page sound with web push fallback alerts", () => {
     true
   );
   assert.equal(existsSync(path.join(root, "public/staff-push-sw.js")), true);
-  assert.equal(
-    existsSync(
-      path.join(root, "app/(staff)/staff/(protected)/presence/route.ts")
-    ),
-    true
-  );
 
   const staffLayout = readFileSync(
     path.join(root, "app/(staff)/staff/(protected)/layout.tsx"),
+    "utf8"
+  );
+  const ordersClient = readFileSync(
+    path.join(root, "app/(staff)/staff/(protected)/orders/orders-client.tsx"),
     "utf8"
   );
   const orderQueues = readFileSync(
@@ -134,8 +115,8 @@ test("staff uses open-page sound with web push fallback alerts", () => {
     path.join(root, "app/actions/orders.ts"),
     "utf8"
   );
-  const fallbackAlerts = readFileSync(
-    path.join(root, "components/staff/staff-push-fallback-alerts.tsx"),
+  const pushAlerts = readFileSync(
+    path.join(root, "components/staff/staff-push-alerts.tsx"),
     "utf8"
   );
   const staffNotifications = readFileSync(
@@ -143,11 +124,15 @@ test("staff uses open-page sound with web push fallback alerts", () => {
     "utf8"
   );
 
-  assert.match(staffLayout, /StaffPushFallbackAlerts/);
+  assert.match(staffLayout, /StaffPushAlerts/);
+  assert.doesNotMatch(staffLayout, /StaffNotificationSoundToggle/);
+  assert.doesNotMatch(ordersClient, /staff-notification-sound/);
+  assert.doesNotMatch(ordersClient, /getStaffNotificationSound/);
+  assert.doesNotMatch(ordersClient, /shouldPlayStaffNotificationSound/);
   assert.match(orderQueues, /STAFF_NOTIFICATIONS_QUEUE/);
   assert.match(ordersAction, /enqueueStaffOrderCreatedNotification/);
-  assert.match(fallbackAlerts, /Sleep alerts/);
-  assert.match(staffNotifications, /isStaffOrdersPageActive/);
+  assert.match(pushAlerts, /Push alerts/);
+  assert.doesNotMatch(staffNotifications, /isStaffOrdersPageActive/);
 });
 
 test("staff logout button submits the logout form", () => {

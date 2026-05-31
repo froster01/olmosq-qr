@@ -20,7 +20,7 @@ export interface StaffPushSubscriptionInput {
   auth: string;
 }
 
-export interface StaffOrderFallbackAlertInput {
+export interface StaffOrderPushAlertInput {
   orderId: string;
   displayNumber: string;
   tableCode: string;
@@ -62,8 +62,8 @@ export function getStaffPushConfig(env: PushEnv = process.env): StaffPushConfig 
   };
 }
 
-export function buildNewOrderFallbackPushPayload(
-  order: StaffOrderFallbackAlertInput
+export function buildNewOrderPushPayload(
+  order: StaffOrderPushAlertInput
 ): StaffPushPayload {
   return {
     title: `New order ${order.displayNumber}`,
@@ -75,7 +75,7 @@ export function buildNewOrderFallbackPushPayload(
   };
 }
 
-export async function sendStaffFallbackPushNotification({
+export async function sendStaffPushNotification({
   subscription,
   payload,
   config = getStaffPushConfig(),
@@ -113,7 +113,7 @@ export function isExpiredPushSubscriptionError(error: unknown) {
   return statusCode === 404 || statusCode === 410;
 }
 
-export async function notifyStaffFallbackSubscriptions({
+export async function notifyStaffPushSubscriptions({
   subscriptions,
   payload,
   onExpired,
@@ -125,7 +125,7 @@ export async function notifyStaffFallbackSubscriptions({
   const results = await Promise.allSettled(
     subscriptions.map(async (subscription) => {
       try {
-        const result = await sendStaffFallbackPushNotification({
+        const result = await sendStaffPushNotification({
           subscription,
           payload,
         });
@@ -149,24 +149,18 @@ export async function notifyStaffFallbackSubscriptions({
   };
 }
 
-export async function notifyNewStaffFallbackOrder({
+export async function notifyNewStaffOrder({
   order,
-  isStaffActive,
   loadSubscriptions,
-  notifySubscriptions = notifyStaffFallbackSubscriptions,
+  notifySubscriptions = notifyStaffPushSubscriptions,
   logger = console,
 }: {
-  order: StaffOrderFallbackAlertInput;
-  isStaffActive: () => Promise<boolean>;
+  order: StaffOrderPushAlertInput;
   loadSubscriptions: () => Promise<StaffPushSubscriptionInput[]>;
-  notifySubscriptions?: typeof notifyStaffFallbackSubscriptions;
+  notifySubscriptions?: typeof notifyStaffPushSubscriptions;
   logger?: StaffPushLogger;
 }) {
   try {
-    if (await isStaffActive()) {
-      return { sent: 0, failed: 0, skipped: true as const };
-    }
-
     const subscriptions = await loadSubscriptions();
 
     if (subscriptions.length === 0) {
@@ -175,10 +169,10 @@ export async function notifyNewStaffFallbackOrder({
 
     return await notifySubscriptions({
       subscriptions,
-      payload: buildNewOrderFallbackPushPayload(order),
+      payload: buildNewOrderPushPayload(order),
     });
   } catch (error) {
-    logger.error("Failed to send staff fallback push alert", error);
+    logger.error("Failed to send staff push alert", error);
     return { sent: 0, failed: 0, skipped: true as const };
   }
 }

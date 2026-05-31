@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  buildNewOrderFallbackPushPayload,
+  buildNewOrderPushPayload,
   getStaffPushConfig,
-  notifyNewStaffFallbackOrder,
-  notifyStaffFallbackSubscriptions,
-} from "./staff-fallback-alerts";
+  notifyNewStaffOrder,
+  notifyStaffPushSubscriptions,
+} from "./staff-alerts";
 
 test("getStaffPushConfig returns disabled when VAPID env is incomplete", () => {
   const config = getStaffPushConfig({
@@ -32,8 +32,8 @@ test("getStaffPushConfig includes normalized VAPID subject when configured", () 
   });
 });
 
-test("buildNewOrderFallbackPushPayload creates staff order alert payload", () => {
-  const payload = buildNewOrderFallbackPushPayload({
+test("buildNewOrderPushPayload creates staff order alert payload", () => {
+  const payload = buildNewOrderPushPayload({
     orderId: "order-1",
     displayNumber: "#12",
     tableCode: "T2",
@@ -50,8 +50,8 @@ test("buildNewOrderFallbackPushPayload creates staff order alert payload", () =>
   });
 });
 
-test("notifyStaffFallbackSubscriptions reports skipped sends as failed when push is unconfigured", async () => {
-  const result = await notifyStaffFallbackSubscriptions({
+test("notifyStaffPushSubscriptions reports skipped sends as failed when push is unconfigured", async () => {
+  const result = await notifyStaffPushSubscriptions({
     subscriptions: [
       {
         endpoint: "https://push.example.com/subscription-1",
@@ -70,8 +70,11 @@ test("notifyStaffFallbackSubscriptions reports skipped sends as failed when push
   assert.deepEqual(result, { sent: 0, failed: 1 });
 });
 
-test("notifyNewStaffFallbackOrder skips when staff orders page is active", async () => {
-  const result = await notifyNewStaffFallbackOrder({
+test("notifyNewStaffOrder sends to subscriptions without active-page suppression", async () => {
+  let loadedSubscriptions = false;
+  let notifiedSubscriptions = false;
+
+  const result = await notifyNewStaffOrder({
     order: {
       orderId: "order-1",
       displayNumber: "#12",
@@ -80,14 +83,25 @@ test("notifyNewStaffFallbackOrder skips when staff orders page is active", async
       total: 18.5,
       itemCount: 3,
     },
-    isStaffActive: async () => true,
     loadSubscriptions: async () => {
-      throw new Error("should not load subscriptions while active");
+      loadedSubscriptions = true;
+      return [
+        {
+          endpoint: "https://push.example.com/subscription-1",
+          p256dh: "key",
+          auth: "auth",
+        },
+      ];
     },
-    notifySubscriptions: async () => {
-      throw new Error("should not notify while active");
+    notifySubscriptions: async ({ subscriptions, payload }) => {
+      notifiedSubscriptions = true;
+      assert.equal(subscriptions.length, 1);
+      assert.equal(payload.title, "New order #12");
+      return { sent: 1, failed: 0 };
     },
   });
 
-  assert.deepEqual(result, { sent: 0, failed: 0, skipped: true });
+  assert.equal(loadedSubscriptions, true);
+  assert.equal(notifiedSubscriptions, true);
+  assert.deepEqual(result, { sent: 1, failed: 0 });
 });

@@ -3,8 +3,7 @@ import { LogOut } from "lucide-react";
 
 import { logoutStaffAction } from "@/app/actions/staff-auth";
 import { BrandMark } from "@/components/brand-mark";
-import { StaffNotificationSoundToggle } from "@/components/staff/staff-notification-sound-toggle";
-import { StaffPushFallbackAlerts } from "@/components/staff/staff-push-fallback-alerts";
+import { StaffPushAlerts } from "@/components/staff/staff-push-alerts";
 import { StaffNavLinks } from "@/components/staff/staff-nav-link";
 import { Button } from "@/components/ui/button";
 import { requireStaffPageUser } from "@/lib/staff-auth/guards";
@@ -30,8 +29,7 @@ export default async function StaffNavLayout({
           <nav className="staff-nav flex items-center gap-1 overflow-x-auto">
             <StaffNavLinks />
           </nav>
-          <StaffNotificationSoundToggle />
-          <StaffPushFallbackAlerts />
+          <StaffPushAlerts />
           <form
             action={logoutStaffAction}
             className="ml-auto flex items-center gap-2"

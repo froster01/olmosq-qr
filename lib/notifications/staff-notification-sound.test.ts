@@ -1,59 +1,72 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "node:test";
 
 import {
-  shouldPlayStaffFallbackPush,
+  createStaffNotificationSound,
   shouldPlayStaffNotificationSound,
 } from "./staff-notification-sound";
 
-test("staff notification sound plays for enabled created order events", () => {
+test("shouldPlayStaffNotificationSound plays only visible created order events", () => {
   assert.equal(
     shouldPlayStaffNotificationSound({
-      enabled: true,
-      hasOpenShift: true,
-      eventKind: "order.created",
+      kind: "order.created",
+      isDocumentVisible: true,
     }),
     true
   );
-});
-
-test("staff notification sound does not play when disabled", () => {
   assert.equal(
     shouldPlayStaffNotificationSound({
-      enabled: false,
-      hasOpenShift: true,
-      eventKind: "order.created",
-    }),
-    false
-  );
-});
-
-test("staff notification sound ignores order updates and closed shifts", () => {
-  assert.equal(
-    shouldPlayStaffNotificationSound({
-      enabled: true,
-      hasOpenShift: true,
-      eventKind: "order.updated",
+      kind: "order.updated",
+      isDocumentVisible: true,
     }),
     false
   );
   assert.equal(
     shouldPlayStaffNotificationSound({
-      enabled: true,
-      hasOpenShift: false,
-      eventKind: "order.created",
+      kind: "order.created",
+      isDocumentVisible: false,
     }),
     false
   );
 });
 
-test("staff fallback push sends only when staff orders page is inactive", () => {
-  assert.equal(
-    shouldPlayStaffFallbackPush({ hasActiveStaffOrdersPage: false }),
-    true
-  );
-  assert.equal(
-    shouldPlayStaffFallbackPush({ hasActiveStaffOrdersPage: true }),
-    false
-  );
+test("createStaffNotificationSound returns false when playback fails", async () => {
+  const sound = createStaffNotificationSound({
+    src: "/sounds/new-order.mp3",
+    createAudio: () => ({
+      preload: "",
+      currentTime: 0,
+      volume: 1,
+      muted: false,
+      load: () => undefined,
+      play: () => Promise.reject(new Error("blocked")),
+      pause: () => undefined,
+    }),
+  });
+
+  assert.equal(await sound.unlock(), false);
+  assert.equal(await sound.play(), false);
+});
+
+test("createStaffNotificationSound unlocks and plays cloned audio", async () => {
+  const played: string[] = [];
+  const sound = createStaffNotificationSound({
+    src: "/sounds/new-order.mp3",
+    createAudio: (src) => ({
+      preload: "",
+      currentTime: 0,
+      volume: 1,
+      muted: false,
+      load: () => undefined,
+      play: () => {
+        played.push(src);
+        return Promise.resolve();
+      },
+      pause: () => undefined,
+    }),
+  });
+
+  assert.equal(await sound.unlock(), true);
+  assert.equal(await sound.play(), true);
+  assert.deepEqual(played, ["/sounds/new-order.mp3", "/sounds/new-order.mp3"]);
 });

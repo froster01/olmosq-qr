@@ -29,3 +29,18 @@ test("staff shift page is the canonical shift route", () => {
     assert.doesNotMatch(content, /\/staff\/cash-drawer/, file);
   }
 });
+
+test("protected staff routes have navigation loading feedback", () => {
+  assert.equal(
+    existsSync(path.join(root, "app/(staff)/staff/(protected)/loading.tsx")),
+    true
+  );
+
+  const staffNavLink = readFileSync(
+    path.join(root, "components/staff/staff-nav-link.tsx"),
+    "utf8"
+  );
+
+  assert.match(staffNavLink, /useLinkStatus/);
+  assert.match(staffNavLink, /aria-hidden/);
+});

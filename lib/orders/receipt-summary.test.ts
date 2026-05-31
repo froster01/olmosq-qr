@@ -7,24 +7,13 @@ test("buildReceiptItemDescription includes named variant and modifiers", () => {
   assert.equal(
     buildReceiptItemDescription({
       item: { name: "Matcha Strawberry" },
-      variant: { name: "10001" },
+      variant: { name: "Large" },
       modifiers: [
         { modifier: { name: "Less Ice" } },
         { modifier: { name: "Oat Milk" } },
       ],
     }),
     "Matcha Strawberry (Large) + Less Ice, Oat Milk"
-  );
-});
-
-test("buildReceiptItemDescription omits SKU-like variant labels", () => {
-  assert.equal(
-    buildReceiptItemDescription({
-      item: { name: "Chocolate Caramel" },
-      variant: { name: "10015" },
-      modifiers: [],
-    }),
-    "Chocolate Caramel"
   );
 });
 

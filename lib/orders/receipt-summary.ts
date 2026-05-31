@@ -17,7 +17,6 @@ export function buildReceiptItemDescription(item: ReceiptSummaryItem): string {
   return `${item.item.name}${variant}${modifiers}`;
 }
 
-
 function shouldShowReceiptVariantLabel(name: string) {
   const label = name.trim();
   return (

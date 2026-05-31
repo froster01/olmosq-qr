@@ -73,7 +73,7 @@ export default async function ShiftReportPage({ params }: PageProps) {
   return (
     <div className="staff-page space-y-6">
       <div className="staff-detail-header flex flex-col gap-4 rounded-2xl border bg-card p-5 shadow-[0_4px_16px_rgba(51,51,51,0.05)] sm:flex-row sm:items-center">
-        <Link href="/staff/cash-drawer">
+        <Link href="/staff/shift">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back

@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/staff/orders", label: "Orders", icon: ClipboardList },
-  { href: "/staff/cash-drawer", label: "Shift", icon: Banknote },
+  { href: "/staff/shift", label: "Shift", icon: Banknote },
   { href: "/staff/menu-settings", label: "Menu", icon: Settings2 },
   { href: "/staff/tables", label: "Tables & QR", icon: QrCode },
 ];

@@ -69,7 +69,7 @@ export default async function ShiftReportsPage() {
     <div className="staff-page staff-shift-reports-page space-y-4">
       <div className="staff-page-header flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
-          <Link href="/staff/cash-drawer">
+          <Link href="/staff/shift">
             <Button variant="ghost" size="sm" className="-ml-2">
               <ArrowLeft className="h-4 w-4" />
               Back to Shift

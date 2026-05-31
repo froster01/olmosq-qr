@@ -1,35 +1,33 @@
 import { prisma } from "@/lib/db";
-import { getStaffFallbackNotificationOrder } from "@/lib/orders/order-realtime-data";
+import { getStaffNotificationOrder } from "@/lib/orders/order-realtime-data";
 import {
-  notifyNewStaffFallbackOrder,
-  notifyStaffFallbackSubscriptions,
-} from "@/lib/push/staff-fallback-alerts";
+  notifyNewStaffOrder,
+  notifyStaffPushSubscriptions,
+} from "@/lib/push/staff-alerts";
 import {
   parseStaffNotificationJobData,
   type StaffNotificationJobData,
 } from "@/lib/realtime/order-events";
-import { isStaffOrdersPageActive } from "@/lib/staff-presence/orders-page-presence";
 
 export async function processStaffNotificationJob(
   data: StaffNotificationJobData
 ) {
   const job = parseStaffNotificationJobData(data);
-  const order = await getStaffFallbackNotificationOrder(job.orderId);
+  const order = await getStaffNotificationOrder(job.orderId);
 
   if (!order) {
     return { skipped: true as const };
   }
 
-  return notifyNewStaffFallbackOrder({
+  return notifyNewStaffOrder({
     order,
-    isStaffActive: isStaffOrdersPageActive,
     loadSubscriptions: () =>
       prisma.staffPushSubscription.findMany({
         where: { enabled: true },
         select: { endpoint: true, p256dh: true, auth: true },
       }),
     notifySubscriptions: ({ subscriptions, payload }) =>
-      notifyStaffFallbackSubscriptions({
+      notifyStaffPushSubscriptions({
         subscriptions,
         payload,
         onExpired: async (subscription) => {

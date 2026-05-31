@@ -26,7 +26,7 @@ async function registerStaffServiceWorker() {
   return navigator.serviceWorker.ready.then(() => registration);
 }
 
-export function StaffPushFallbackAlerts() {
+export function StaffPushAlerts() {
   const [state, setState] = useState<PushSupportState>("checking");
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -109,9 +109,9 @@ export function StaffPushFallbackAlerts() {
       }
 
       setState("enabled");
-      toast.success("Sleep alerts enabled");
+      toast.success("Push alerts enabled");
     } catch {
-      toast.error("Could not enable sleep alerts");
+      toast.error("Could not enable push alerts");
     } finally {
       setBusy(false);
     }
@@ -134,9 +134,9 @@ export function StaffPushFallbackAlerts() {
       }
 
       setState("disabled");
-      toast.success("Sleep alerts disabled");
+      toast.success("Push alerts disabled");
     } catch {
-      toast.error("Could not disable sleep alerts");
+      toast.error("Could not disable push alerts");
     } finally {
       setBusy(false);
     }
@@ -150,7 +150,7 @@ export function StaffPushFallbackAlerts() {
     return (
       <Button variant="outline" size="sm" disabled className="staff-push-button">
         <BellOff className="h-4 w-4" />
-        Sleep alerts off
+        Push alerts off
       </Button>
     );
   }
@@ -177,7 +177,7 @@ export function StaffPushFallbackAlerts() {
       ) : (
         <BellOff className="h-4 w-4" />
       )}
-      {state === "enabled" ? "Sleep alerts on" : "Sleep alerts"}
+      {state === "enabled" ? "Push alerts on" : "Push alerts"}
     </Button>
   );
 }

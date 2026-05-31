@@ -1,10 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { ArrowRight, Lock } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { OrdersList } from "@/components/staff/orders-list";
 import { buildOrderWebSocketUrl } from "@/lib/realtime/order-websocket-client";
 import type { OrderRealtimeEvent } from "@/lib/realtime/order-events";
+import { Card, CardContent } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface OrderData {
   id: string;
@@ -51,6 +56,10 @@ export function OrdersPageClient({
   }, []);
 
   useEffect(() => {
+    if (!currentShift) {
+      return;
+    }
+
     let isMounted = true;
     let socket: WebSocket | null = null;
 
@@ -101,7 +110,7 @@ export function OrdersPageClient({
       window.clearTimeout(connectTimer);
       socket?.close();
     };
-  }, [refresh]);
+  }, [currentShift, refresh]);
 
   const filtered =
     activeTab === "ALL"
@@ -123,25 +132,64 @@ export function OrdersPageClient({
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="staff-tabs-list flex max-w-full flex-nowrap justify-start gap-2 overflow-x-auto rounded-[1.35rem] bg-muted/35 p-1.5 ring-1 ring-border/60">
-          {statusTabs.map((tab) => (
-            <TabsTrigger
-              key={tab.value}
-              value={tab.value}
-              className="staff-tab-trigger min-w-16 flex-none shrink-0 border border-border/70 bg-card px-4 text-muted-foreground shadow-sm data-active:border-primary data-active:bg-primary data-active:text-primary-foreground data-active:shadow-[0_4px_12px_rgba(80,101,47,0.18)]"
-            >
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <div className="relative min-h-[24rem]">
+        <div
+          aria-hidden={!currentShift}
+          className={cn(
+            "transition duration-200",
+            !currentShift &&
+              "pointer-events-none select-none opacity-45 blur-[2px]"
+          )}
+        >
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="staff-tabs-list flex max-w-full flex-nowrap justify-start gap-2 overflow-x-auto rounded-[1.35rem] bg-muted/35 p-1.5 ring-1 ring-border/60">
+              {statusTabs.map((tab) => (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className="staff-tab-trigger min-w-16 flex-none shrink-0 border border-border/70 bg-card px-4 text-muted-foreground shadow-sm data-active:border-primary data-active:bg-primary data-active:text-primary-foreground data-active:shadow-[0_4px_12px_rgba(80,101,47,0.18)]"
+                >
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
-        {statusTabs.map((tab) => (
-          <TabsContent key={tab.value} value={tab.value}>
-            <OrdersList orders={filtered} />
-          </TabsContent>
-        ))}
-      </Tabs>
+            {statusTabs.map((tab) => (
+              <TabsContent key={tab.value} value={tab.value}>
+                <OrdersList orders={filtered} />
+              </TabsContent>
+            ))}
+          </Tabs>
+        </div>
+
+        {!currentShift && (
+          <div className="absolute inset-0 z-10 flex items-start justify-center px-3 pt-10 sm:items-center sm:pt-0">
+            <Card className="w-full max-w-md border-primary/20 bg-card/95 text-center shadow-[0_18px_60px_rgba(51,51,51,0.16)] backdrop-blur">
+              <CardContent className="space-y-4 p-6">
+                <div className="mx-auto grid size-12 place-items-center rounded-xl bg-primary/10 text-primary">
+                  <Lock className="h-5 w-5" />
+                </div>
+                <div className="space-y-2">
+                  <h2 className="font-heading text-2xl font-bold">
+                    Open a shift before taking orders
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Start the shift from the Shift page so new table orders can
+                    be assigned to the correct counter session.
+                  </p>
+                </div>
+                <Link
+                  className={cn(buttonVariants({ size: "lg" }), "w-full")}
+                  href="/staff/shift"
+                >
+                  Open Shift Page
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

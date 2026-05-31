@@ -7,10 +7,13 @@ export const revalidate = 0;
 
 export default async function OrdersPage() {
   const currentShift = await getCurrentShift();
+  const initialOrders = currentShift
+    ? await getCurrentShiftOrderSummaries(currentShift.id)
+    : [];
 
   return (
     <OrdersPageClient
-      initialOrders={await getCurrentShiftOrderSummaries()}
+      initialOrders={initialOrders}
       currentShift={
         currentShift
           ? {

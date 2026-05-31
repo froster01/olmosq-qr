@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  buildNewOrderNotificationPayload,
+  buildNewOrderFallbackPushPayload,
   getStaffPushConfig,
-  notifyNewStaffOrder,
-  notifyStaffSubscriptions,
-} from "./staff-alerts";
+  notifyNewStaffFallbackOrder,
+  notifyStaffFallbackSubscriptions,
+} from "./staff-fallback-alerts";
 
 test("getStaffPushConfig returns disabled when VAPID env is incomplete", () => {
   const config = getStaffPushConfig({
@@ -32,8 +32,8 @@ test("getStaffPushConfig includes normalized VAPID subject when configured", () 
   });
 });
 
-test("buildNewOrderNotificationPayload creates staff order alert payload", () => {
-  const payload = buildNewOrderNotificationPayload({
+test("buildNewOrderFallbackPushPayload creates staff order alert payload", () => {
+  const payload = buildNewOrderFallbackPushPayload({
     orderId: "order-1",
     displayNumber: "#12",
     tableCode: "T2",
@@ -50,8 +50,8 @@ test("buildNewOrderNotificationPayload creates staff order alert payload", () =>
   });
 });
 
-test("notifyStaffSubscriptions reports skipped sends as failed when push is unconfigured", async () => {
-  const result = await notifyStaffSubscriptions({
+test("notifyStaffFallbackSubscriptions reports skipped sends as failed when push is unconfigured", async () => {
+  const result = await notifyStaffFallbackSubscriptions({
     subscriptions: [
       {
         endpoint: "https://push.example.com/subscription-1",
@@ -70,10 +70,8 @@ test("notifyStaffSubscriptions reports skipped sends as failed when push is unco
   assert.deepEqual(result, { sent: 0, failed: 1 });
 });
 
-test("notifyNewStaffOrder does not throw when subscription storage is unavailable", async () => {
-  let loggedError: unknown = null;
-
-  const result = await notifyNewStaffOrder({
+test("notifyNewStaffFallbackOrder skips when staff orders page is active", async () => {
+  const result = await notifyNewStaffFallbackOrder({
     order: {
       orderId: "order-1",
       displayNumber: "#12",
@@ -82,20 +80,14 @@ test("notifyNewStaffOrder does not throw when subscription storage is unavailabl
       total: 18.5,
       itemCount: 3,
     },
+    isStaffActive: async () => true,
     loadSubscriptions: async () => {
-      throw new Error("TableDoesNotExist");
+      throw new Error("should not load subscriptions while active");
     },
     notifySubscriptions: async () => {
-      throw new Error("should not send without subscriptions");
-    },
-    logger: {
-      error: (_message, error) => {
-        loggedError = error;
-      },
+      throw new Error("should not notify while active");
     },
   });
 
   assert.deepEqual(result, { sent: 0, failed: 0, skipped: true });
-  assert.ok(loggedError instanceof Error);
-  assert.equal(loggedError.message, "TableDoesNotExist");
 });

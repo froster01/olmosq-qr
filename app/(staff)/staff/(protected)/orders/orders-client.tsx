@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { ArrowRight, Lock } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -10,6 +10,13 @@ import type { OrderRealtimeEvent } from "@/lib/realtime/order-events";
 import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+  getStaffNotificationSound,
+  readStaffNotificationSoundEnabled,
+  shouldPlayStaffNotificationSound,
+  STAFF_NOTIFICATION_SOUND_CHANGE_EVENT,
+  STAFF_NOTIFICATION_SOUND_STORAGE_KEY,
+} from "@/lib/notifications/staff-notification-sound";
 
 interface OrderData {
   id: string;
@@ -42,6 +49,7 @@ export function OrdersPageClient({
 }) {
   const [orders, setOrders] = useState<OrderData[]>(initialOrders);
   const [activeTab, setActiveTab] = useState("ALL");
+  const soundEnabledRef = useRef(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -56,9 +64,56 @@ export function OrdersPageClient({
   }, []);
 
   useEffect(() => {
+    soundEnabledRef.current = readStaffNotificationSoundEnabled(
+      window.localStorage
+    );
+
+    function handleSoundChange(event: Event) {
+      const enabled = (event as CustomEvent<{ enabled?: boolean }>).detail
+        ?.enabled;
+      soundEnabledRef.current =
+        typeof enabled === "boolean"
+          ? enabled
+          : readStaffNotificationSoundEnabled(window.localStorage);
+    }
+
+    function handleStorageChange(event: StorageEvent) {
+      if (event.key === STAFF_NOTIFICATION_SOUND_STORAGE_KEY) {
+        soundEnabledRef.current = readStaffNotificationSoundEnabled(
+          window.localStorage
+        );
+      }
+    }
+
+    window.addEventListener(
+      STAFF_NOTIFICATION_SOUND_CHANGE_EVENT,
+      handleSoundChange
+    );
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener(
+        STAFF_NOTIFICATION_SOUND_CHANGE_EVENT,
+        handleSoundChange
+      );
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!currentShift) {
       return;
     }
+
+    function sendPresenceHeartbeat() {
+      void fetch("/staff/presence", {
+        method: "POST",
+        cache: "no-store",
+      });
+    }
+
+    sendPresenceHeartbeat();
+    const presenceTimer = window.setInterval(sendPresenceHeartbeat, 10000);
 
     let isMounted = true;
     let socket: WebSocket | null = null;
@@ -80,11 +135,19 @@ export function OrdersPageClient({
 
       socket.onmessage = (message) => {
         try {
-          const event = JSON.parse(message.data) as {
-            staffOrder?: OrderRealtimeEvent["staffOrder"];
-          };
+          const event = JSON.parse(message.data) as OrderRealtimeEvent;
           if (!event.staffOrder) {
             return;
+          }
+
+          if (
+            shouldPlayStaffNotificationSound({
+              enabled: soundEnabledRef.current,
+              eventKind: event.kind,
+              hasOpenShift: Boolean(currentShift),
+            })
+          ) {
+            void getStaffNotificationSound().play();
           }
 
           const staffOrder = event.staffOrder;
@@ -107,6 +170,7 @@ export function OrdersPageClient({
 
     return () => {
       isMounted = false;
+      window.clearInterval(presenceTimer);
       window.clearTimeout(connectTimer);
       socket?.close();
     };

@@ -3,9 +3,9 @@ import {
   serializeCustomerOrderStatus,
   serializeStaffOrderSummary,
 } from "@/lib/orders/order-serialization";
-import { formatOrderDisplayNumber } from "@/lib/shifts/shift-rules";
 import type { OrderRealtimeEvent } from "@/lib/realtime/order-events";
-import type { StaffOrderAlertInput } from "@/lib/push/staff-alerts";
+import { formatOrderDisplayNumber } from "@/lib/shifts/shift-rules";
+import type { StaffOrderFallbackAlertInput } from "@/lib/push/staff-fallback-alerts";
 
 const staffOrderInclude = {
   _count: { select: { items: true } },
@@ -70,9 +70,9 @@ export async function getCustomerOrderStatus(orderId: string) {
   return order ? serializeCustomerOrderStatus(order) : null;
 }
 
-export async function getStaffNotificationOrder(
+export async function getStaffFallbackNotificationOrder(
   orderId: string
-): Promise<StaffOrderAlertInput | null> {
+): Promise<StaffOrderFallbackAlertInput | null> {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: staffOrderInclude,

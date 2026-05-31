@@ -32,8 +32,16 @@ export default async function StaffNavLayout({
           </nav>
           <StaffNotificationSoundToggle />
           <StaffPushFallbackAlerts />
-          <form action={logoutStaffAction} className="ml-auto flex items-center gap-2">
-            <Button variant="outline" size="sm" className="staff-logout-button">
+          <form
+            action={logoutStaffAction}
+            className="ml-auto flex items-center gap-2"
+          >
+            <Button
+              type="submit"
+              variant="outline"
+              size="sm"
+              className="staff-logout-button"
+            >
               <LogOut className="h-4 w-4" />
               Sign out
             </Button>

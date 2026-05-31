@@ -149,3 +149,13 @@ test("staff uses open-page sound with web push fallback alerts", () => {
   assert.match(fallbackAlerts, /Sleep alerts/);
   assert.match(staffNotifications, /isStaffOrdersPageActive/);
 });
+
+test("staff logout button submits the logout form", () => {
+  const staffLayout = readFileSync(
+    path.join(root, "app/(staff)/staff/(protected)/layout.tsx"),
+    "utf8"
+  );
+
+  assert.match(staffLayout, /<form[\s\S]*action=\{logoutStaffAction\}/);
+  assert.match(staffLayout, /type="submit"/);
+});

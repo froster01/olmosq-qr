@@ -2692,8 +2692,6 @@
   }
 }
 
-<<<<<<< Updated upstream
-=======
 @media (max-width: 999px) {
   .staff-shift-focus-grid,
   .staff-cash-drawer-layout {
@@ -2713,7 +2711,6 @@
   }
 }
 
->>>>>>> Stashed changes
 @media (max-width: 640px) {
   .staff-current-shift-summary {
     grid-template-columns: minmax(0, 1fr);

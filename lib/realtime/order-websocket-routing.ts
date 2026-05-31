@@ -4,12 +4,20 @@ export type OrderSocketSubscription =
   | { scope: "staff" }
   | { scope: "customer"; orderId: string };
 
+type ParseOrderSocketSubscriptionOptions = {
+  isStaffAuthenticated?: boolean;
+};
+
 export function parseOrderSocketSubscription(
-  url: URL
+  url: URL,
+  options: ParseOrderSocketSubscriptionOptions = {}
 ): OrderSocketSubscription | null {
   const scope = url.searchParams.get("scope");
 
   if (scope === "staff") {
+    if (!options.isStaffAuthenticated) {
+      return null;
+    }
     return { scope };
   }
 

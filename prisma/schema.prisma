@@ -203,6 +203,17 @@ model StaffPushSubscription {
   @@index([enabled])
 }
 
+model StaffUser {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isActive])
+}
+
 enum OrderStatus {
   PENDING
   ACCEPTED

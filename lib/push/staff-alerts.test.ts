@@ -3,6 +3,7 @@ import { test } from "node:test";
 
 import {
   buildNewOrderPushPayload,
+  buildStaffPushErrorLog,
   getStaffPushConfig,
   notifyNewStaffOrder,
   notifyStaffPushSubscriptions,
@@ -105,6 +106,28 @@ test("notifyStaffPushSubscriptions logs failed send details", async () => {
     endpointHost: "updates.push.services.mozilla.com",
     skipped: true,
   });
+});
+
+test("buildStaffPushErrorLog includes generic error details", () => {
+  const error = new Error("connect ETIMEDOUT");
+  Object.assign(error, { code: "ETIMEDOUT" });
+
+  assert.deepEqual(
+    buildStaffPushErrorLog(
+      {
+        endpoint: "https://fcm.googleapis.com/fcm/send/subscription-1",
+        p256dh: "key",
+        auth: "auth",
+      },
+      error
+    ),
+    {
+      endpointHost: "fcm.googleapis.com",
+      name: "Error",
+      message: "connect ETIMEDOUT",
+      code: "ETIMEDOUT",
+    }
+  );
 });
 
 test("notifyNewStaffOrder sends to subscriptions without active-page suppression", async () => {

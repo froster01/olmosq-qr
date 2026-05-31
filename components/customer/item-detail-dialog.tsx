@@ -11,13 +11,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart-context";
 import { cn } from "@/lib/utils";
-import type { Item, Variant, ItemModifier } from "@prisma/client";
+import type { CustomerMenuItem } from "@/lib/menu/customer-menu-data";
 import type { Temperature } from "@/lib/cart-types";
 import { Coffee, Minus, Plus, Snowflake } from "lucide-react";
 
-type ItemWithRelations = Item & {
-  variants: Variant[];
-  modifiers: ItemModifier[];
+type ItemWithRelations = CustomerMenuItem & {
   asksTemperature: boolean;
 };
 

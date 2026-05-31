@@ -9,18 +9,9 @@ import { CartProvider, useCart } from "@/lib/cart-context";
 import { MenuBrowser } from "@/components/customer/menu-browser";
 import { CartSheet } from "@/components/customer/cart-sheet";
 import { CheckoutForm } from "@/components/customer/checkout-form";
-import type { Category, Item, Variant, ItemModifier } from "@prisma/client";
+import type { CustomerMenuCategory } from "@/lib/menu/customer-menu-data";
 import { toast } from "sonner";
 import { submitOrder } from "@/app/actions/orders";
-
-type ItemWithRelations = Item & {
-  variants: Variant[];
-  modifiers: ItemModifier[];
-};
-
-type CategoryWithItems = Category & {
-  items: ItemWithRelations[];
-};
 
 function OrderingContent({
   tableCode,
@@ -29,7 +20,7 @@ function OrderingContent({
 }: {
   tableCode: string;
   tableNumber: number;
-  categories: CategoryWithItems[];
+  categories: CustomerMenuCategory[];
 }) {
   const { items, subtotal } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
@@ -202,7 +193,7 @@ export function OrderingPageClient({
 }: {
   tableCode: string;
   tableNumber: number;
-  categories: CategoryWithItems[];
+  categories: CustomerMenuCategory[];
 }) {
   return (
     <CartProvider>

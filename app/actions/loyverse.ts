@@ -4,6 +4,7 @@ import { syncFullMenu } from "@/lib/loyverse/menu-sync";
 import { syncPaymentTypes } from "@/lib/loyverse/payment-sync";
 import { createLoyverseReceipt } from "@/lib/loyverse/receipt-builder";
 import { prisma } from "@/lib/db";
+import { revalidateMenuData } from "@/lib/cache/revalidation";
 import {
   getPaidOrderStatus,
   getReceiptSyncFailedOrderStatus,
@@ -19,6 +20,7 @@ export async function syncMenuAction() {
 
   try {
     const result = await syncFullMenu();
+    revalidateMenuData();
     return { success: true, data: result };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -194,6 +196,8 @@ export async function resetMenuAction() {
 
     const totalDeleted =
       deletedItems.count + deletedCategories.count + deletedVariants.count + deletedModifiers.count + deletedOrderItems.count;
+
+    revalidateMenuData();
 
     return { success: true, data: { deleted: totalDeleted } };
   } catch (error) {

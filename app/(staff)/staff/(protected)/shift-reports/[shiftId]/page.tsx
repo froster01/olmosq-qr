@@ -12,7 +12,7 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/staff/status-badge";
-import { getShiftById } from "@/lib/shifts/current-shift";
+import { getCachedClosedShiftReport } from "@/lib/shifts/closed-shift-report-data";
 import { formatOrderDisplayNumber } from "@/lib/shifts/shift-rules";
 import { summarizeShiftReport } from "@/lib/shifts/shift-report";
 import { formatReceiptMoney } from "@/lib/orders/receipt-summary";
@@ -43,9 +43,9 @@ function formatTime(date: Date | string | null): string {
 
 export default async function ShiftReportPage({ params }: PageProps) {
   const { shiftId } = await params;
-  const shift = await getShiftById(shiftId);
+  const shift = await getCachedClosedShiftReport(shiftId);
 
-  if (!shift || shift.status !== "CLOSED") {
+  if (!shift) {
     notFound();
   }
 

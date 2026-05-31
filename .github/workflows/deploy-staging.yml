@@ -37,6 +37,7 @@ jobs:
         shell: bash
         env:
           VPS_APP_DIR: ${{ secrets.VPS_APP_DIR }}
+          VPS_ENV_FILE: ${{ secrets.VPS_ENV_FILE }}
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
         run: |
           set -euo pipefail
@@ -47,6 +48,15 @@ jobs:
           84.247.148.159 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDdqV98DkamDvtWEOM6fMhUti3rDcr+sxy5GDwIyq0WjVVHFbcGeykRZXG8UY02kKGeofWc+9LDGvZYytmJNcc0P+AtrOi0aoBobdLrtn8JATUvng34FMqu5B2uqLbyXZuswu2uiV25++Hg8tw01yn0pmu/yUGxd1gd5NpgSfpBMe5+OLWLDLq+5tgc3XFahINsbiVW83CyzJyFW/dAx6SGl+gtspQH94UpXC+Xr8SdvSdyqzG4KQmGl2wgSObg3JvzlsnXmfxPfRpNt19FZPe40Kd7OvcO9ig/bbAaXXPsu0rReuvghIiHDsWKQSQC7nohUIh6ZVQCBK52BjNHSb/eoskgiuHKX4wW1i0yMIhyCyj5gxUYqegujgYufYgdRJ/3hs966DOpCv0qW/ejg3yVUJSrNynhgGGEG1UlByEVo68UCNk05qZTajOhly1YbOMbORPND07XySsnequHh+5pdBtq5x3qyp9fsXqc/tUv782x1TJgrsv+9IiuwLI7Xas=
           84.247.148.159 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIINoNIj2QOSoBrinWxHz7hwqNBZ6DC0pEHcw6pVziqw1
           KNOWN_HOSTS
+          if [ -n "${VPS_ENV_FILE:-}" ]; then
+            printf '%s\n' "$VPS_ENV_FILE" | ssh -i ~/.ssh/vps_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -p "$VPS_SSH_PORT" "$VPS_USER@$VPS_HOST" \
+              'bash -se' -- "$VPS_APP_DIR" <<'REMOTE_ENV'
+            set -euo pipefail
+            install -m 700 -d "$1"
+            umask 077
+            cat > "$1/.env.vps"
+          REMOTE_ENV
+          fi
           ssh -i ~/.ssh/vps_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -p "$VPS_SSH_PORT" "$VPS_USER@$VPS_HOST" \
             'bash -se' -- "$VPS_APP_DIR" staging "${{ github.sha }}" <<'REMOTE'
           set -euo pipefail

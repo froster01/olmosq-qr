@@ -117,10 +117,12 @@ export async function notifyStaffPushSubscriptions({
   subscriptions,
   payload,
   onExpired,
+  logger = console,
 }: {
   subscriptions: StaffPushSubscriptionInput[];
   payload: StaffPushPayload;
   onExpired?: (subscription: StaffPushSubscriptionInput) => Promise<void>;
+  logger?: StaffPushLogger;
 }) {
   const results = await Promise.allSettled(
     subscriptions.map(async (subscription) => {
@@ -129,8 +131,18 @@ export async function notifyStaffPushSubscriptions({
           subscription,
           payload,
         });
+        if (!result.success) {
+          logger.error(
+            "Failed to send staff push notification",
+            buildStaffPushErrorLog(subscription, result)
+          );
+        }
         return { success: result.success };
       } catch (error) {
+        logger.error(
+          "Failed to send staff push notification",
+          buildStaffPushErrorLog(subscription, error)
+        );
         if (isExpiredPushSubscriptionError(error)) {
           await onExpired?.(subscription);
         }
@@ -147,6 +159,46 @@ export async function notifyStaffPushSubscriptions({
       (result) => result.status === "rejected" || !result.value.success
     ).length,
   };
+}
+
+function buildStaffPushErrorLog(
+  subscription: StaffPushSubscriptionInput,
+  error: unknown
+) {
+  const log: {
+    endpointHost: string;
+    statusCode?: unknown;
+    body?: unknown;
+    skipped?: unknown;
+  } = {
+    endpointHost: getEndpointHost(subscription.endpoint),
+  };
+
+  const statusCode = getErrorField(error, "statusCode");
+  const body = getErrorField(error, "body");
+  if (statusCode !== undefined) log.statusCode = statusCode;
+  if (body !== undefined) log.body = body;
+  if (typeof error === "object" && error !== null && "skipped" in error) {
+    log.skipped = error.skipped;
+  }
+
+  return log;
+}
+
+function getEndpointHost(endpoint: string) {
+  try {
+    return new URL(endpoint).host;
+  } catch {
+    return "invalid-endpoint";
+  }
+}
+
+function getErrorField(error: unknown, field: "statusCode" | "body") {
+  if (!error || typeof error !== "object" || !(field in error)) {
+    return undefined;
+  }
+
+  return (error as Record<"statusCode" | "body", unknown>)[field];
 }
 
 export async function notifyNewStaffOrder({

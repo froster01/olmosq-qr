@@ -65,9 +65,42 @@ test("notifyStaffPushSubscriptions reports skipped sends as failed when push is 
       url: "/staff/orders/order-1",
       tag: "order-order-1",
     },
+    logger: {
+      error: () => undefined,
+    },
   });
 
   assert.deepEqual(result, { sent: 0, failed: 1 });
+});
+
+test("notifyStaffPushSubscriptions logs failed send details", async () => {
+  const errors: Array<{ message: string; error: unknown }> = [];
+
+  await notifyStaffPushSubscriptions({
+    subscriptions: [
+      {
+        endpoint: "https://updates.push.services.mozilla.com/subscription-1",
+        p256dh: "key",
+        auth: "auth",
+      },
+    ],
+    payload: {
+      title: "New order #12",
+      body: "Table T2",
+      url: "/staff/orders/order-1",
+      tag: "order-order-1",
+    },
+    logger: {
+      error: (message, error) => errors.push({ message, error }),
+    },
+  });
+
+  assert.equal(errors.length, 1);
+  assert.equal(errors[0]?.message, "Failed to send staff push notification");
+  assert.deepEqual(errors[0]?.error, {
+    endpointHost: "updates.push.services.mozilla.com",
+    skipped: true,
+  });
 });
 
 test("notifyNewStaffOrder sends to subscriptions without active-page suppression", async () => {

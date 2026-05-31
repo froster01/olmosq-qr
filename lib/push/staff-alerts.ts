@@ -164,12 +164,15 @@ export async function notifyStaffPushSubscriptions({
   };
 }
 
-function buildStaffPushErrorLog(
+export function buildStaffPushErrorLog(
   subscription: StaffPushSubscriptionInput,
   error: unknown
 ) {
   const log: {
     endpointHost: string;
+    name?: unknown;
+    message?: unknown;
+    code?: unknown;
     statusCode?: unknown;
     body?: unknown;
     skipped?: unknown;
@@ -179,6 +182,12 @@ function buildStaffPushErrorLog(
 
   const statusCode = getErrorField(error, "statusCode");
   const body = getErrorField(error, "body");
+  const name = getErrorField(error, "name");
+  const message = getErrorField(error, "message");
+  const code = getErrorField(error, "code");
+  if (name !== undefined) log.name = name;
+  if (message !== undefined) log.message = message;
+  if (code !== undefined) log.code = code;
   if (statusCode !== undefined) log.statusCode = statusCode;
   if (body !== undefined) log.body = body;
   if (typeof error === "object" && error !== null && "skipped" in error) {
@@ -196,12 +205,17 @@ function getEndpointHost(endpoint: string) {
   }
 }
 
-function getErrorField(error: unknown, field: "statusCode" | "body") {
+function getErrorField(
+  error: unknown,
+  field: "name" | "message" | "code" | "statusCode" | "body"
+) {
   if (!error || typeof error !== "object" || !(field in error)) {
     return undefined;
   }
 
-  return (error as Record<"statusCode" | "body", unknown>)[field];
+  return (
+    error as Record<"name" | "message" | "code" | "statusCode" | "body", unknown>
+  )[field];
 }
 
 export async function notifyNewStaffOrder({

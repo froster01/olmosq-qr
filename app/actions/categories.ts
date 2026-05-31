@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { moveCategoryInOrder } from "@/lib/menu/category-sort";
-import { getUnauthorizedStaffActionResult } from "@/lib/staff-auth/guards";
 import { z } from "zod";
 
 const updateCategoryTemperatureSchema = z.object({
@@ -53,9 +52,6 @@ export async function updateCategoryTemperatureAction(input: {
   categoryId: string;
   asksTemperature: boolean;
 }) {
-  const unauthorized = await getUnauthorizedStaffActionResult();
-  if (unauthorized) return unauthorized;
-
   const parsed = updateCategoryTemperatureSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, error: "Choose a valid category setting." };
@@ -76,9 +72,6 @@ export async function updateCategoryVisibilityAction(input: {
   categoryId: string;
   isVisibleInMenu: boolean;
 }) {
-  const unauthorized = await getUnauthorizedStaffActionResult();
-  if (unauthorized) return unauthorized;
-
   const parsed = updateCategoryVisibilitySchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, error: "Choose a valid category setting." };
@@ -99,9 +92,6 @@ export async function moveCategoryAction(input: {
   categoryId: string;
   direction: "up" | "down";
 }) {
-  const unauthorized = await getUnauthorizedStaffActionResult();
-  if (unauthorized) return unauthorized;
-
   const parsed = moveCategorySchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, error: "Choose a valid category order." };

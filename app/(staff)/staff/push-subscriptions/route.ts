@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/db";
 import { getStaffPushConfig } from "@/lib/push/staff-alerts";
-import { getCurrentStaffUser } from "@/lib/staff-auth/guards";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -19,10 +18,6 @@ const deleteSubscriptionSchema = z.object({
 });
 
 export async function GET() {
-  if (!(await getCurrentStaffUser())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   const config = getStaffPushConfig();
   return NextResponse.json({
     enabled: config.enabled,
@@ -31,10 +26,6 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (!(await getCurrentStaffUser())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   const parsed = pushSubscriptionSchema.safeParse(await request.json());
 
   if (!parsed.success) {
@@ -68,10 +59,6 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  if (!(await getCurrentStaffUser())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   const parsed = deleteSubscriptionSchema.safeParse(await request.json());
 
   if (!parsed.success) {

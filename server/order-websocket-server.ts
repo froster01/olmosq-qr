@@ -13,7 +13,6 @@ import {
   type OrderSocketSubscription,
 } from "@/lib/realtime/order-websocket-routing";
 import { createRedisConnection } from "@/lib/realtime/redis";
-import { isStaffCookieHeaderAuthenticated } from "@/lib/staff-auth/request";
 
 const websocketPath = "/ws/orders";
 
@@ -82,7 +81,7 @@ export function attachOrderWebSocketServer(
       return;
     }
 
-    if (!parseOrderSocketSubscription(url, getStaffAuthOption(request))) {
+    if (!parseOrderSocketSubscription(url)) {
       rejectUpgrade(socket);
       return;
     }
@@ -97,13 +96,7 @@ export function attachOrderWebSocketServer(
 
 function getSubscriptionFromRequest(request: IncomingMessage) {
   const url = getRequestUrl(request);
-  return url ? parseOrderSocketSubscription(url, getStaffAuthOption(request)) : null;
-}
-
-function getStaffAuthOption(request: IncomingMessage) {
-  return {
-    isStaffAuthenticated: isStaffCookieHeaderAuthenticated(request.headers.cookie),
-  };
+  return url ? parseOrderSocketSubscription(url) : null;
 }
 
 function getRequestUrl(request: IncomingMessage) {

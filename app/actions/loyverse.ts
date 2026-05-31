@@ -11,12 +11,8 @@ import {
 import { validateCashPayment } from "@/lib/payments/cash-drawer";
 import { enqueueOrderUpdatedEvent } from "@/lib/realtime/order-queues";
 import { getCurrentShift } from "@/lib/shifts/current-shift";
-import { getUnauthorizedStaffActionResult } from "@/lib/staff-auth/guards";
 
 export async function syncMenuAction() {
-  const unauthorized = await getUnauthorizedStaffActionResult();
-  if (unauthorized) return unauthorized;
-
   try {
     const result = await syncFullMenu();
     return { success: true, data: result };
@@ -27,9 +23,6 @@ export async function syncMenuAction() {
 }
 
 export async function syncPaymentTypesAction() {
-  const unauthorized = await getUnauthorizedStaffActionResult();
-  if (unauthorized) return unauthorized;
-
   try {
     const count = await syncPaymentTypes();
     return { success: true, data: { paymentTypes: count } };
@@ -44,9 +37,6 @@ export async function createReceiptAction(
   paymentTypeId: string,
   cashReceived?: number
 ) {
-  const unauthorized = await getUnauthorizedStaffActionResult();
-  if (unauthorized) return unauthorized;
-
   const order = await prisma.order.findUnique({
     where: { id: orderId },
   });
@@ -158,9 +148,6 @@ async function enqueueOrderUpdate(orderId: string) {
 }
 
 export async function retryReceiptAction(orderId: string) {
-  const unauthorized = await getUnauthorizedStaffActionResult();
-  if (unauthorized) return unauthorized;
-
   const order = await prisma.order.findUnique({
     where: { id: orderId },
   });
@@ -175,9 +162,6 @@ export async function retryReceiptAction(orderId: string) {
 }
 
 export async function resetMenuAction() {
-  const unauthorized = await getUnauthorizedStaffActionResult();
-  if (unauthorized) return unauthorized;
-
   try {
     // Delete in correct order to respect foreign key constraints:
     // 1. OrderItems (depend on Item and Variant)
@@ -203,9 +187,6 @@ export async function resetMenuAction() {
 }
 
 export async function resetPaymentTypesAction() {
-  const unauthorized = await getUnauthorizedStaffActionResult();
-  if (unauthorized) return unauthorized;
-
   try {
     // Clear paymentTypeId from orders that reference payment types
     await prisma.order.updateMany({

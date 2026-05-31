@@ -2692,28 +2692,6 @@
   }
 }
 
-<<<<<<< Updated upstream
-=======
-@media (max-width: 999px) {
-  .staff-shift-focus-grid,
-  .staff-cash-drawer-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .staff-cash-orders-scroll {
-    max-height: none;
-    overflow: visible;
-    padding-right: 0;
-  }
-}
-
-@media (min-width: 1000px) {
-  .staff-cash-drawer-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(18rem, 20rem);
-  }
-}
-
->>>>>>> Stashed changes
 @media (max-width: 640px) {
   .staff-current-shift-summary {
     grid-template-columns: minmax(0, 1fr);

@@ -28,9 +28,9 @@ Production and staging use separate Docker networks and Postgres volumes.
    cp .env.vps.example .env.vps
    ```
 
-3. Edit `.env.vps`. Use strong, different database passwords, staff JWT
-   secrets, and staff seed passwords for production and staging. The Compose
-   file builds `DATABASE_URL` and `DIRECT_URL` automatically from those values.
+3. Edit `.env.vps`. Use strong, different database passwords for production
+   and staging. The Compose file builds `DATABASE_URL` and `DIRECT_URL`
+   automatically from those values.
 
 4. Start the stack:
 
@@ -48,13 +48,6 @@ Production and staging use separate Docker networks and Postgres volumes.
 
    ```bash
    scripts/vps-migrate.sh production
-   ```
-
-7. Seed the single staff login in each environment after migrations:
-
-   ```bash
-   docker compose --env-file .env.vps -f compose.vps.yml run --rm app-staging npx prisma db seed
-   docker compose --env-file .env.vps -f compose.vps.yml run --rm app-prod npx prisma db seed
    ```
 
 ## Deploy Updates

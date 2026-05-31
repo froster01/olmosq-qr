@@ -12,7 +12,6 @@ import {
   enqueueStaffOrderCreatedNotification,
 } from "@/lib/realtime/order-queues";
 import { getCurrentShift } from "@/lib/shifts/current-shift";
-import { getUnauthorizedStaffActionResult } from "@/lib/staff-auth/guards";
 import { z } from "zod";
 
 const submitOrderSchema = z.object({
@@ -179,9 +178,6 @@ export async function updateOrderStatus(
   orderId: string,
   newStatus: string
 ) {
-  const unauthorized = await getUnauthorizedStaffActionResult();
-  if (unauthorized) return unauthorized;
-
   const parsedStatus = updateOrderStatusSchema.safeParse(newStatus);
   if (!parsedStatus.success) {
     return { success: false, error: "Invalid order status" };

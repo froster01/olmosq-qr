@@ -9,7 +9,6 @@ import {
   getNextShiftNumber,
   validateShiftCashAmount,
 } from "@/lib/shifts/shift-rules";
-import { getUnauthorizedStaffActionResult } from "@/lib/staff-auth/guards";
 
 const shiftRevalidationPaths = [
   "/staff/orders",
@@ -58,9 +57,6 @@ async function getExpectedCashForShift(shiftId: string, startingCash: number) {
 }
 
 export async function openShiftAction(startingCash: number) {
-  const unauthorized = await getUnauthorizedStaffActionResult();
-  if (unauthorized) return unauthorized;
-
   let validatedStartingCash: number;
   try {
     validatedStartingCash = validateShiftCashAmount(startingCash);
@@ -111,9 +107,6 @@ export async function openShiftAction(startingCash: number) {
 }
 
 export async function closeShiftAction(actualCash: number, note?: string) {
-  const unauthorized = await getUnauthorizedStaffActionResult();
-  if (unauthorized) return unauthorized;
-
   let validatedActualCash: number;
   try {
     validatedActualCash = validateShiftCashAmount(actualCash);
@@ -177,9 +170,6 @@ export async function createCashMovementAction({
   amount: number;
   note?: string;
 }) {
-  const unauthorized = await getUnauthorizedStaffActionResult();
-  if (unauthorized) return unauthorized;
-
   if (type !== "CASH_IN" && type !== "CASH_OUT") {
     return { success: false, error: "Choose cash in or cash out." };
   }

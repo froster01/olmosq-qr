@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Banknote,
@@ -17,6 +17,20 @@ const navItems = [
   { href: "/staff/menu-settings", label: "Menu", icon: Settings2 },
   { href: "/staff/tables", label: "Tables & QR", icon: QrCode },
 ];
+
+function StaffNavPendingIndicator() {
+  const { pending } = useLinkStatus();
+
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "size-1.5 shrink-0 rounded-full bg-primary opacity-0 transition-opacity",
+        pending && "animate-pulse opacity-100"
+      )}
+    />
+  );
+}
 
 export function StaffNavLinks() {
   const pathname = usePathname();
@@ -39,6 +53,7 @@ export function StaffNavLinks() {
           >
             <Icon className="h-4 w-4" />
             <span className="staff-nav-label">{item.label}</span>
+            <StaffNavPendingIndicator />
           </Link>
         );
       })}

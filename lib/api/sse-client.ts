@@ -1,8 +1,15 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
+interface OrderData {
+  id: string;
+  status: string;
+  updatedAt: string;
+  [key: string]: unknown;
+}
+
 export interface SSEOrderUpdate {
   type: 'connected' | 'initial' | 'order-update';
-  order?: any;
+  order?: OrderData;
   timestamp: string;
 }
 
@@ -50,7 +57,7 @@ export function subscribeToOrderUpdates(
  * ```
  */
 export function useOrderUpdates(orderId: string) {
-  const [order, setOrder] = React.useState<any>(null);
+  const [order, setOrder] = React.useState<OrderData | null>(null);
   const [status, setStatus] = React.useState<string>('');
   const [isConnected, setIsConnected] = React.useState(false);
 

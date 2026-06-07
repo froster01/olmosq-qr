@@ -14,28 +14,29 @@ interface PageProps {
 export default async function TableOrderingPage({ params }: PageProps) {
   const { tableCode } = await params;
 
+  let menuData;
   try {
-    const menuData = await customerApi.getMenu(tableCode);
-
-    if (!menuData.table || !menuData.table.isActive) {
-      notFound();
-    }
-
-    if (!menuData.shift || menuData.shift.status !== 'OPEN') {
-      return <ShopClosed tableNumber={menuData.table.number} />;
-    }
-
-    return (
-      <OrderingPageClient
-        tableCode={tableCode}
-        tableNumber={menuData.table.number}
-        categories={menuData.menu.categories}
-      />
-    );
+    menuData = await customerApi.getMenu(tableCode);
   } catch (error) {
     console.error('Error loading menu:', error);
     notFound();
   }
+
+  if (!menuData.table || !menuData.table.isActive) {
+    notFound();
+  }
+
+  if (!menuData.shift || menuData.shift.status !== 'OPEN') {
+    return <ShopClosed tableNumber={menuData.table.number} />;
+  }
+
+  return (
+    <OrderingPageClient
+      tableCode={tableCode}
+      tableNumber={menuData.table.number}
+      categories={menuData.menu.categories}
+    />
+  );
 }
 
 function ShopClosed({ tableNumber }: { tableNumber: number }) {

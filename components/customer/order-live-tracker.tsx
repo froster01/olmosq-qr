@@ -8,14 +8,8 @@ import {
 } from "@/lib/orders/customer-tracking";
 import { StatusBadge } from "@/components/staff/status-badge";
 import { cn } from "@/lib/utils";
-import { buildOrderWebSocketUrl } from "@/lib/realtime/order-websocket-client";
-import type { OrderRealtimeEvent } from "@/lib/realtime/order-events";
-
-type OrderStatusResponse = {
-  status: string;
-  updatedAt: string;
-  tracking: ReturnType<typeof getCustomerTrackingState>;
-};
+import { subscribeToOrderUpdates } from "@/lib/api/sse-client";
+import { customerApi } from "@/lib/api/client";
 
 export function OrderLiveTracker({
   orderId,
@@ -31,22 +25,14 @@ export function OrderLiveTracker({
   const [lastCheckedAt, setLastCheckedAt] = useState(initialUpdatedAt);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasConnectionError, setHasConnectionError] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
 
   const tracking = useMemo(() => getCustomerTrackingState(status), [status]);
 
   const refreshStatus = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      const response = await fetch(`/api/orders/${orderId}/status`, {
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        throw new Error("Could not refresh order status");
-      }
-
-      const data = (await response.json()) as OrderStatusResponse;
-
+      const data = await customerApi.getOrderStatus(orderId);
       setStatus(data.status);
       setUpdatedAt(data.updatedAt);
       setLastCheckedAt(new Date().toISOString());
@@ -60,62 +46,36 @@ export function OrderLiveTracker({
 
   useEffect(() => {
     let isMounted = true;
-    let socket: WebSocket | null = null;
 
-    const connectTimer = window.setTimeout(() => {
-      if (!isMounted) {
-        return;
-      }
+    // Connect to SSE
+    const unsubscribe = subscribeToOrderUpdates(orderId, (data) => {
+      if (!isMounted) return;
 
-      socket = new WebSocket(
-        buildOrderWebSocketUrl({ scope: "customer", orderId })
-      );
-
-      socket.onopen = () => {
-        if (!isMounted) {
-          return;
-        }
-
-        void refreshStatus();
-      };
-
-      socket.onmessage = (message) => {
-        try {
-          const event = JSON.parse(message.data) as {
-            kind?: string;
-            customerStatus?: OrderRealtimeEvent["customerStatus"];
-          };
-
-          if (!isMounted || event.kind === "connected" || !event.customerStatus) {
-            return;
-          }
-
-          setStatus(event.customerStatus.status);
-          setUpdatedAt(event.customerStatus.updatedAt);
-          setLastCheckedAt(new Date().toISOString());
+      if (data.type === 'connected') {
+        setIsConnected(true);
+        setHasConnectionError(false);
+      } else if (data.type === 'initial' || data.type === 'order-update') {
+        if (data.order) {
+          setStatus(data.order.status);
+          setUpdatedAt(data.order.updatedAt);
           setHasConnectionError(false);
-        } catch {
-          setHasConnectionError(true);
         }
-      };
+      }
+    });
 
-      socket.onerror = () => {
-        socket?.close();
-      };
-
-      socket.onclose = () => {
-        if (isMounted) {
-          setHasConnectionError(true);
-        }
-      };
-    }, 0);
+    // Fallback polling every 10 seconds if SSE fails
+    const pollInterval = setInterval(() => {
+      if (!isConnected) {
+        void refreshStatus();
+      }
+    }, 10000);
 
     return () => {
       isMounted = false;
-      window.clearTimeout(connectTimer);
-      socket?.close();
+      unsubscribe();
+      clearInterval(pollInterval);
     };
-  }, [orderId, refreshStatus]);
+  }, [orderId, refreshStatus, isConnected]);
 
   return (
     <section className="customer-confirmation-section">

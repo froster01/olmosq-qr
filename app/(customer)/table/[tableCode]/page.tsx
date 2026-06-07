@@ -1,6 +1,4 @@
-import { prisma } from "@/lib/db";
-import { getCachedCustomerMenuCategories } from "@/lib/menu/customer-menu-data";
-import { getCurrentShift } from "@/lib/shifts/current-shift";
+import { customerApi } from "@/lib/api/client";
 import { notFound } from "next/navigation";
 import { OrderingPageClient } from "./ordering-client";
 import { BrandMark } from "@/components/brand-mark";
@@ -16,28 +14,28 @@ interface PageProps {
 export default async function TableOrderingPage({ params }: PageProps) {
   const { tableCode } = await params;
 
-  const table = await prisma.table.findUnique({
-    where: { code: tableCode },
-  });
+  try {
+    const menuData = await customerApi.getMenu(tableCode);
 
-  if (!table || !table.isActive) {
+    if (!menuData.table || !menuData.table.isActive) {
+      notFound();
+    }
+
+    if (!menuData.shift || menuData.shift.status !== 'OPEN') {
+      return <ShopClosed tableNumber={menuData.table.number} />;
+    }
+
+    return (
+      <OrderingPageClient
+        tableCode={tableCode}
+        tableNumber={menuData.table.number}
+        categories={menuData.menu.categories}
+      />
+    );
+  } catch (error) {
+    console.error('Error loading menu:', error);
     notFound();
   }
-
-  const openShift = await getCurrentShift();
-  if (!openShift) {
-    return <ShopClosed tableNumber={table.number} />;
-  }
-
-  const categories = await getCachedCustomerMenuCategories();
-
-  return (
-    <OrderingPageClient
-      tableCode={tableCode}
-      tableNumber={table.number}
-      categories={categories}
-    />
-  );
 }
 
 function ShopClosed({ tableNumber }: { tableNumber: number }) {

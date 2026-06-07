@@ -6,7 +6,7 @@ import { CheckCircle2, Clock3, RefreshCw } from "lucide-react";
 import {
   getCustomerTrackingState,
 } from "@/lib/orders/customer-tracking";
-import { StatusBadge } from "@/components/staff/status-badge";
+import { StatusBadge } from "@/components/customer/status-badge";
 import { cn } from "@/lib/utils";
 import { subscribeToOrderUpdates } from "@/lib/api/sse-client";
 import { customerApi } from "@/lib/api/client";

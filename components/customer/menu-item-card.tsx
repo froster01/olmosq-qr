@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Coffee } from "lucide-react";
-import type { CustomerMenuItem } from "@/lib/menu/customer-menu-data";
+import type { CustomerMenuItem } from "@/lib/api/client";
 
 type ItemWithRelations = CustomerMenuItem & {
   asksTemperature: boolean;

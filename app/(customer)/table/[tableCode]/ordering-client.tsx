@@ -9,9 +9,9 @@ import { CartProvider, useCart } from "@/lib/cart-context";
 import { MenuBrowser } from "@/components/customer/menu-browser";
 import { CartSheet } from "@/components/customer/cart-sheet";
 import { CheckoutForm } from "@/components/customer/checkout-form";
-import type { CustomerMenuCategory } from "@/lib/menu/customer-menu-data";
+import type { CustomerMenuCategory } from "@/lib/api/client";
 import { toast } from "sonner";
-import { submitOrder } from "@/app/actions/orders";
+import { customerApi } from "@/lib/api/client";
 
 function OrderingContent({
   tableCode,
@@ -38,25 +38,27 @@ function OrderingContent({
     setCartOpen(false);
 
     try {
-      const formData = new FormData();
-      formData.set("tableCode", tableCode);
-      formData.set("customerName", customerName);
-      formData.set("items", JSON.stringify(items));
+      const result = await customerApi.submitOrder({
+        tableCode,
+        customerName,
+        items: items.map(item => ({
+          itemId: item.itemId,
+          variantId: item.variantId,
+          quantity: item.quantity,
+          modifierIds: item.modifierIds,
+          notes: item.notes,
+          temperature: item.temperature,
+        })),
+      });
 
-      const result = await submitOrder(formData);
-      if ("data" in result && result.data) {
-        router.push(`/order/${result.data.orderId}/confirmation`);
+      if (result.success) {
+        router.push(`/order/${result.orderId}/confirmation`);
       } else {
-        const error = "error" in result ? result.error : null;
-        const shiftError =
-          error && typeof error === "object" && "shift" in error
-            ? error.shift?.[0]
-            : null;
-        toast.error(shiftError ?? "Failed to place order. Please try again.");
-        console.error(result);
+        toast.error("Failed to place order. Please try again.");
       }
-    } catch {
-      toast.error("Something went wrong. Please try again.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Something went wrong. Please try again.";
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }

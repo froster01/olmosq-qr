@@ -1,9 +1,8 @@
-import { prisma } from "@/lib/db";
+import { customerApi } from "@/lib/api/client";
 import { notFound } from "next/navigation";
 import { CheckCircle2, ReceiptText, Wallet } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { BrandMark } from "@/components/brand-mark";
-import { formatOrderDisplayNumber } from "@/lib/shifts/shift-rules";
 import { OrderLiveTracker } from "@/components/customer/order-live-tracker";
 
 export const dynamic = "force-dynamic";
@@ -12,18 +11,12 @@ interface PageProps {
   params: Promise<{ orderId: string }>;
 }
 
-type ConfirmationOrderModifier = {
-  modifier: { name: string };
-};
-
-type ConfirmationOrderItem = {
-  id: string;
-  quantity: number;
-  unitPrice: unknown;
-  notes: string | null;
-  item: { name: string };
-  modifiers: ConfirmationOrderModifier[];
-};
+function formatOrderDisplayNumber(orderNumber: number, shiftOrderNumber: number | null) {
+  if (shiftOrderNumber !== null && shiftOrderNumber !== undefined) {
+    return `#${shiftOrderNumber}`;
+  }
+  return `#${orderNumber}`;
+}
 
 function parseOrderItemNotes(notes: string | null) {
   if (!notes) {
@@ -61,25 +54,18 @@ function parseOrderItemNotes(notes: string | null) {
 export default async function ConfirmationPage({ params }: PageProps) {
   const { orderId } = await params;
 
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
-    include: {
-      items: {
-        include: {
-          item: true,
-          modifiers: { include: { modifier: true } },
-        },
-      },
-    },
-  });
-
-  if (!order) {
+  let order;
+  try {
+    order = await customerApi.getOrderDetails(orderId);
+  } catch (error) {
+    console.error('Error loading order:', error);
     notFound();
   }
-  const displayNumber = formatOrderDisplayNumber({
-    shiftOrderNumber: order.shiftOrderNumber,
-    orderNumber: order.orderNumber,
-  });
+
+  const displayNumber = formatOrderDisplayNumber(
+    order.orderNumber,
+    order.shiftOrderNumber
+  );
   const total = Number(order.total);
 
   return (
@@ -117,7 +103,7 @@ export default async function ConfirmationPage({ params }: PageProps) {
               </div>
               <div>
                 <span>Table</span>
-                <strong>{order.tableCode}</strong>
+                <strong>{order.table.code}</strong>
               </div>
             </div>
           </section>
@@ -125,7 +111,7 @@ export default async function ConfirmationPage({ params }: PageProps) {
           <OrderLiveTracker
             orderId={order.id}
             initialStatus={order.status}
-            initialUpdatedAt={order.updatedAt.toISOString()}
+            initialUpdatedAt={order.updatedAt}
           />
 
           <section className="customer-confirmation-section">
@@ -134,7 +120,7 @@ export default async function ConfirmationPage({ params }: PageProps) {
               Order summary
             </div>
 
-            {order.items.map((oi: ConfirmationOrderItem) => {
+            {order.items.map((oi) => {
               const itemNotes = parseOrderItemNotes(oi.notes);
 
               return (
@@ -152,11 +138,7 @@ export default async function ConfirmationPage({ params }: PageProps) {
                       {oi.modifiers.length > 0 && (
                         <span className="customer-confirmation-option-badge">
                           <span>
-                          {oi.modifiers
-                            .map(
-                              (m: ConfirmationOrderModifier) => m.modifier.name
-                            )
-                            .join(", ")}
+                            {oi.modifiers.map((m) => m.name).join(", ")}
                           </span>
                         </span>
                       )}

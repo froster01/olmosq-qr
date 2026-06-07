@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type {
   CustomerMenuCategory,
   CustomerMenuItem,
-} from "@/lib/menu/customer-menu-data";
+} from "@/lib/api/client";
 import { shouldAskTemperatureForCategory } from "@/lib/menu/category-temperature";
 
 type ItemWithTemperature = CustomerMenuItem & {

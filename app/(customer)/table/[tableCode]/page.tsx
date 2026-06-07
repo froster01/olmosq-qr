@@ -1,6 +1,4 @@
-import { prisma } from "@/lib/db";
-import { getCachedCustomerMenuCategories } from "@/lib/menu/customer-menu-data";
-import { getCurrentShift } from "@/lib/shifts/current-shift";
+import { customerApi } from "@/lib/api/client";
 import { notFound } from "next/navigation";
 import { OrderingPageClient } from "./ordering-client";
 import { BrandMark } from "@/components/brand-mark";
@@ -16,26 +14,27 @@ interface PageProps {
 export default async function TableOrderingPage({ params }: PageProps) {
   const { tableCode } = await params;
 
-  const table = await prisma.table.findUnique({
-    where: { code: tableCode },
-  });
-
-  if (!table || !table.isActive) {
+  let menuData;
+  try {
+    menuData = await customerApi.getMenu(tableCode);
+  } catch (error) {
+    console.error('Error loading menu:', error);
     notFound();
   }
 
-  const openShift = await getCurrentShift();
-  if (!openShift) {
-    return <ShopClosed tableNumber={table.number} />;
+  if (!menuData.table || !menuData.table.isActive) {
+    notFound();
   }
 
-  const categories = await getCachedCustomerMenuCategories();
+  if (!menuData.shift || menuData.shift.status !== 'OPEN') {
+    return <ShopClosed tableNumber={menuData.table.number} />;
+  }
 
   return (
     <OrderingPageClient
       tableCode={tableCode}
-      tableNumber={table.number}
-      categories={categories}
+      tableNumber={menuData.table.number}
+      categories={menuData.menu.categories}
     />
   );
 }
